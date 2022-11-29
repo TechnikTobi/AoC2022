@@ -3,7 +3,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::str::FromStr;
 
-pub fn get_data
+pub fn read_data
 <T: FromStr + std::default::Default + std::fmt::Display>
 (
 	path: &std::path::Path,
@@ -31,11 +31,39 @@ pub fn get_data
 
 
 
-pub fn get_string_data
+pub fn read_string_data
 (
 	path: &std::path::Path
 )
--> Vec<String>
+-> Result<Vec<String>, Box<dyn std::error::Error>>
 {
-	return Vec::new();	
+	let file = File::open(path)?;
+	let lines = BufReader::new(file).lines();
+	let mut data = Vec::<String>::new();
+
+	for result_line in lines
+	{
+		let line = result_line?;
+		data.push(line);
+	}
+
+	return Ok(data);	
+}
+
+
+#[cfg(test)]
+mod tests {
+
+	#[test]
+	fn
+	test1() 
+	{
+		let data = crate::read_data::<i32>(
+			std::path::Path::new("tests/input1.txt"),
+			None
+		).unwrap();
+
+		assert_eq!(data.len(), 2000);
+		assert_eq!(data[0], 104);
+	}
 }
