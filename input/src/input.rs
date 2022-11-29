@@ -11,43 +11,19 @@ pub fn get_data
 )
 -> Result<Vec<T>, Box<dyn std::error::Error>>
 {	
-	println!("Test");
-
 	let file = File::open(path)?;
 	let lines = BufReader::new(file).lines();
 	let mut data = Vec::<T>::new();
 
 	for result_line in lines
 	{
-		if let Ok(line) = result_line
-		{
-			println!("{}", line);
-			/*
-			let mut elements = line.split(delimiter.unwrap_or(' '));
-			data.append(&mut elements.collect::<Vec<T>>());
-			*/
-			
-			/*
-			let elements = line.split(delimiter.unwrap_or(' '));
-			for element in elements
-			{
-				println!("{}", T::from_str(element).unwrap_or_default());
-			}
-			*/
+		let line = result_line?;
+		let mut elements = line.split(delimiter.unwrap_or(' '))
+			.map(T::from_str)
+			.map(Result::unwrap_or_default)
+			.collect::<Vec<T>>();
 
-			/*
-			let elements = line.split(delimiter.unwrap_or(' '))
-				.map(|&element| T::from_str(&element).unwrap_or_default())
-				.collect::<Vec<T>>();
-			*/
-
-			let mut elements = line.split(delimiter.unwrap_or(' '))
-				.map(T::from_str)
-				.map(Result::unwrap_or_default)
-				.collect::<Vec<T>>();
-
-			data.append(&mut elements);
-		}
+		data.append(&mut elements);
 	}	
 
 	return Ok(data);
