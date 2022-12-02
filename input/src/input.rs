@@ -3,6 +3,8 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::str::FromStr;
 
+/// Opens a file, reads in each line as data of type T, puts them all into a vector.
+#[allow(dead_code)]
 pub fn read_data
 <T: FromStr + std::default::Default + std::fmt::Display>
 (
@@ -29,10 +31,15 @@ pub fn read_data
 	return Ok(data);
 }
 
+
+
+/// Reads in groups of lines (groups are separated by empty lines) and puts all
+/// elements of a group into a Vec<T> vector. 
+#[allow(dead_code)]
 pub fn read_vecs
 <T: FromStr + std::default::Default + std::fmt::Display + std::clone::Clone>
 (
-	path: &std::path::Path,
+	path: &std::path::Path
 )
 -> Result<Vec<Vec<T>>, Box<dyn std::error::Error>>
 {	
@@ -61,6 +68,34 @@ pub fn read_vecs
 	return Ok(data);
 }
 
+
+
+/// Special case combination of read_vecs and read_string_data, where each
+/// group of lines (groups are separated by empty lines) gets joined to a single
+/// string using the given separator or a space by default. 
+/// Relies on the function read_vecs
+#[allow(dead_code)]
+pub fn read_string_data_empty_line
+(
+	path: &std::path::Path,
+	sep: Option<&String>
+)
+-> Result<Vec<String>, Box<dyn std::error::Error>>
+{
+	let vectors = read_vecs::<String>(path)?;
+	let mut data = Vec::<String>::new();
+
+	for vector in vectors
+	{
+		data.push(vector.join(sep.unwrap_or(&" ".to_string())));
+	}
+
+	return Ok(data);
+}
+
+
+/// Reads in each line of the input file as a string and puts all of them into a vector.
+#[allow(dead_code)]
 pub fn read_string_data
 (
 	path: &std::path::Path
