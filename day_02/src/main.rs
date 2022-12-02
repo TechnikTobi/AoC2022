@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 pub fn read_string_data
 (
