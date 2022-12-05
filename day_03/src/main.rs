@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 /// Reads in each line of the input file as a string and puts all of them into a vector.
 #[allow(dead_code)]
@@ -25,8 +24,6 @@ pub fn read_string_data
 }
 
 fn main() {
-
-	let large_compartments = 2;
 
 	let rucksacks = read_string_data(
 		std::path::Path::new("./data/input.txt"),

@@ -17,7 +17,7 @@ pub fn read_data
 	for result_line in lines
 	{
 		let line = result_line?;
-		let mut elements = line
+		let elements = line
 			.split([',', '-'])
 			.map(T::from_str)
 			.map(Result::unwrap_or_default)
@@ -77,9 +77,6 @@ fn main() {
 		let a1_end = assignment[1];
 		let a2_start = assignment[2];
 		let a2_end = assignment[3];
-
-		let a1_len = a1_end - a1_start;
-		let a2_len = a2_end - a2_start;
 
 		if a1_start <= a2_start && a1_end >= a2_start
 		{
