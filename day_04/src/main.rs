@@ -36,39 +36,7 @@ fn main() {
 		std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
-	// Part 1
 	let mut total_overlaps = 0;
-
-	for assignment in &raw_assignments
-	{
-		let a1_start = assignment[0];
-		let a1_end = assignment[1];
-		let a2_start = assignment[2];
-		let a2_end = assignment[3];
-
-		let a1_len = a1_end - a1_start;
-		let a2_len = a2_end - a2_start;
-
-		if a1_len >= a2_len
-		{
-			if a1_start <= a2_start && a2_end <= a1_end
-			{
-				total_overlaps += 1;
-			}
-		}
-		else
-		{
-			if a2_start <= a1_start && a1_end <= a2_end
-			{
-				total_overlaps += 1;
-			}
-		}
-	}
-
-	println!("Total overlaps: {}", total_overlaps);
-
-
-	// Part 2
 	let mut partial_overlaps = 0;
 
 	for assignment in &raw_assignments
@@ -78,15 +46,24 @@ fn main() {
 		let a2_start = assignment[2];
 		let a2_end = assignment[3];
 
-		if a1_start <= a2_start && a1_end >= a2_start
+		// Part 1
+		if 
+		(a1_start <= a2_start && a2_end <= a1_end) ||
+		(a2_start <= a1_start && a1_end <= a2_end)
 		{
-			partial_overlaps += 1;
+			total_overlaps += 1;
 		}
-		else if a2_start <= a1_start && a2_end >= a1_start
+
+		// Part 2
+		if 
+		(a1_start <= a2_start && a1_end >= a2_start) ||
+		(a2_start <= a1_start && a2_end >= a1_start)
 		{
 			partial_overlaps += 1;
 		}
 	}
 
+	println!("Total overlaps: {}", total_overlaps);
 	println!("Partial overlaps: {}", partial_overlaps);
+	
 }
