@@ -116,6 +116,26 @@ pub fn read_string_data
 }
 
 
+/// Reads in the first line of the specified input file
+#[allow(dead_code)]
+pub fn read_line
+(
+	path: &std::path::Path
+)
+-> Result<String, Box<dyn std::error::Error>>
+{
+	let file = File::open(path)?;
+	let lines = BufReader::new(file).lines();
+
+	for result_line in lines
+	{
+		return Ok(result_line?);
+	}
+
+    return Ok("".to_string());
+}
+
+
 #[cfg(test)]
 mod tests {
 
