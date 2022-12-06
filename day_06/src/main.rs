@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::collections::VecDeque;
+use std::collections::HashSet;
 
 pub fn read_line
 (
@@ -30,7 +31,6 @@ fn main() {
     let marker_len = 14; // 4; for part 1
     let mut marker = VecDeque::<char>::new();
 
-
     for marker_index in 1..(line.len()+1)
     {
         marker.push_back(line.pop_front().unwrap());
@@ -40,22 +40,10 @@ fn main() {
             marker.pop_front();
         }
 
-        let mut all_are_different = true;
-        for i in 0..marker.len()
-        {
-            for j in 0..marker.len()
-            {
-                if i != j && marker[i] == marker[j]
-                {
-                    all_are_different = false;
-                }
-            }
-        }
-
-        if marker.len() == marker_len && all_are_different
+        if marker.iter().map(|&x| x).collect::<HashSet<char>>().len() == marker_len
         {
             println!("Maker position: {}", marker_index);
-            break;
+            return;
         }
     }
 
