@@ -3,12 +3,6 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::collections::HashMap;
 
-struct ElfFile
-{
-	name: String,
-	size: u64
-}
-
 fn read_string_data
 (
 	path: &std::path::Path
@@ -32,10 +26,9 @@ fn parse_string_data
 (
 	data: &Vec<String>
 )
-// -> Box<dyn filesys_object>
 {
 
-	let mut directories = HashMap::from([("/".to_string(), Vec::<ElfFile>::new())]);
+	let mut directories = HashMap::from([("/".to_string(), Vec::<u64>::new())]);
 	let mut current_path = "/".to_string();
 
 	for line in data
@@ -75,25 +68,25 @@ fn parse_string_data
 				let directory_name = format!("{}{}/", current_path, &line[4..]);
 				directories.insert(
 					directory_name,
-					Vec::<ElfFile>::new()
+					Vec::<u64>::new()
 				);
 			},
 			Some(_) => { // File
-				let mut line_parts = line
+				let file_size = line
 					.split(' ')
 					.map(|x| x.to_string())
-					.collect::<Vec<String>>();
-				let file_size = line_parts[0].parse::<u64>().unwrap_or_default();
-				line_parts.remove(0);
-				let file_name = line_parts.join(" ");
-				directories.get_mut(&current_path).unwrap().push(
-					ElfFile {name: file_name, size: file_size}
-				);
+					.collect::<Vec<String>>()[0]
+					.parse::<u64>()
+					.unwrap_or_default();
+				directories.get_mut(&current_path).unwrap().push(file_size);
 			}
 			_ => panic!("AH")
 		}
 	}
 
+
+	
+	// Part 1
 	let mut directory_sizes = Vec::new();
 	for entry in &directories
 	{
@@ -106,14 +99,12 @@ fn parse_string_data
 			{
 				directory_size += other_entry.1
 					.iter()
-					.map(|file| file.size)
 					.sum::<u64>();
 			}
 		}
 
 		directory_size += entry.1
 					.iter()
-					.map(|file| file.size)
 					.sum::<u64>();
 
 		directory_sizes.push(directory_size);
@@ -122,6 +113,9 @@ fn parse_string_data
 
 	println!("Final sum for part 1: {}", directory_sizes.iter().filter(|&x| *x < 100000u64).sum::<u64>());
 
+
+
+	// Part 2
 	let disk_size = 70000000u64;
 	let space_required = 30000000u64;
 
@@ -130,7 +124,6 @@ fn parse_string_data
 		.map(
 			|directory| directory.1
 				.iter()
-				.map(|file| file.size)
 				.sum::<u64>()
 		)
 		.sum::<u64>();
