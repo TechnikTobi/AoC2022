@@ -50,11 +50,11 @@ fn main()
 	// Part 1
 	let part_1_start = Instant::now();
 
-	let mut visible_count = 0u64;
+	let mut visible_count = 4 * heights.len() as u64 - 4;
 
-	for y in 0..heights.len()
+	for y in 1..heights.len()-1
 	{
-		for x in 0..heights[0].len()
+		for x in 1..heights[0].len()-1
 		{
 			let tree_height = heights[y][x];
 
