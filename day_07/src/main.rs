@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::collections::HashMap;
+use std::time::Instant;
 
 fn read_string_data
 (
@@ -85,8 +86,10 @@ fn parse_string_data
 	}
 
 
-	
+
 	// Part 1
+	let part_1_start = Instant::now();
+
 	let mut directory_sizes = Vec::new();
 	for entry in &directories
 	{
@@ -104,18 +107,22 @@ fn parse_string_data
 		}
 
 		directory_size += entry.1
-					.iter()
-					.sum::<u64>();
+			.iter()
+			.sum::<u64>();
 
 		directory_sizes.push(directory_size);
 		println!("{}: {}", entry.0, directory_size);
 	}
 
-	println!("Final sum for part 1: {}", directory_sizes.iter().filter(|&x| *x < 100000u64).sum::<u64>());
+	let part_1_end = Instant::now();
 
+	println!("Final sum for part 1: {}", directory_sizes.iter().filter(|&x| *x < 100000u64).sum::<u64>());
+	println!("Time for part 2: {}µs", part_1_end.duration_since(part_1_start).as_micros());
 
 
 	// Part 2
+	let part_2_start = Instant::now();
+
 	let disk_size = 70000000u64;
 	let space_required = 30000000u64;
 
@@ -135,7 +142,10 @@ fn parse_string_data
 		.min()
 		.unwrap_or(&used_space);
 	
+	let part_2_end = Instant::now();
+
 	println!("Final size for part 2: {}", smallest_viable_directory_size);
+	println!("Time for part 2: {}µs", part_2_end.duration_since(part_2_start).as_micros());
 
 }
 
