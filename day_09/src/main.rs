@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufRead;
@@ -77,9 +76,6 @@ get_tail_direction
 )
 -> Position
 {
-	// 4 0 1
-	// 0   0
-	// 3 0 2
 	if (head.x != tail.x) && (head.y != tail.y)
 	{
 		if head.distance(tail) <= 2
@@ -106,19 +102,18 @@ get_tail_direction
 	}
 	else
 	{
-		if (head.x == tail.x)
+		
+		if head.x == tail.x
 		{
-			if (head.y > tail.y)
+			return match (head.y - tail.y).signum()
 			{
-				return Position {x: 0, y: 1};
-			}
-			if (head.y < tail.y)
-			{
-				return Position {x: 0, y: -1};
-			}
-			return Position {x: 0, y: 0};
+				1 => Position {x: 0, y: 1},
+				-1 => Position {x: 0, y: -1},
+				0 => Position {x: 0, y: 0},
+				_ => panic!("AH")
+			};
 		}
-		if (head.x > tail.x)
+		if head.x > tail.x
 		{
 			return Position {x: 1, y: 0};
 		}
@@ -135,7 +130,7 @@ fn main()
 		std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
-	let iterations = 1000;
+	let iterations = 5000;
 
 	// Part 1
 	let mut visited_part_1_len = 0;
@@ -181,12 +176,14 @@ fn main()
 	}
 
 	part_1_times.sort();
-	println!("Visited fields by tail for part 1: {}", visited_part_1_len);
-	println!("Time for part 1 - Mean:   {}µs", part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
-	println!("Time for part 1 - Median: {}µs", part_1_times[part_1_times.len() / 2]);
-	println!("Time for part 1 - Min: {}µs", part_1_times[0]);
-	println!("Time for part 1 - Max: {}µs", part_1_times[part_1_times.len() -1]);
-	
+	println!("---------- DAY: 09 - PART 1 ----------");
+	println!("Result:     {}\n", visited_part_1_len);
+	println!("Iterations: {}", iterations);
+	println!("Mean:       {}µs", part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
+	println!("Median:     {}µs", part_1_times[part_1_times.len() / 2]);
+	println!("Min:        {}µs", part_1_times[0]);
+	println!("Max:        {}µs\n", part_1_times[part_1_times.len() -1]);	
+
 
 
 	// Part 2
@@ -228,6 +225,10 @@ fn main()
 						let tail_direction = get_tail_direction(&knots[i-1], &knots[i]);
 						knots[i].add(&tail_direction);
 					}
+					else 
+					{
+						break;
+					}
 				}
 
 				visited_part_2.insert(knots[knots_count-1].clone());
@@ -242,9 +243,11 @@ fn main()
 	}
 
 	part_2_times.sort();
-	println!("Visited fields by tail for part 2: {}", visited_part_2_len);
-	println!("Time for part 2 - Mean:   {}µs", part_2_times.iter().sum::<u128>()/(part_2_times.len() as u128));
-	println!("Time for part 2 - Median: {}µs", part_2_times[part_2_times.len() / 2]);
-	println!("Time for part 2 - Min: {}µs", part_2_times[0]);
-	println!("Time for part 2 - Max: {}µs", part_2_times[part_2_times.len() -1]);
+	println!("---------- DAY: 09 - PART 2 ----------");
+	println!("Result:     {}\n", visited_part_2_len);
+	println!("Iterations: {}", iterations);
+	println!("Mean:       {}µs", part_2_times.iter().sum::<u128>()/(part_2_times.len() as u128));
+	println!("Median:     {}µs", part_2_times[part_2_times.len() / 2]);
+	println!("Min:        {}µs", part_2_times[0]);
+	println!("Max:        {}µs", part_2_times[part_2_times.len() -1]);
 }
