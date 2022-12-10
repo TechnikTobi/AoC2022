@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -92,16 +91,65 @@ fn main()
 
 	// Part 1 & 2
 	let mut part_1_result = 0;
-	let mut part_2_result = String::new();
 
 	let mut part_1_times = Vec::new();
 	for _iteration in 0..iterations
 	{
 		let part_1_start = Instant::now();
 
-		let mut register_X = 1i64;
+		let mut register_x = 1i64;
 		let mut cycle_count = 0i64;
 		let mut signal = 0i64;
+
+		for i in &instructions
+		{
+			match i.operator.as_str()
+			{
+				"addx" => {
+					cycle_count += 1;
+					signal += calc_signal_strength(register_x, cycle_count);
+					cycle_count += 1;
+					signal += calc_signal_strength(register_x, cycle_count);
+					register_x += i.operand;
+				},
+				"noop" => {
+					cycle_count += 1;
+					signal += calc_signal_strength(register_x, cycle_count);
+				},
+				_ => panic!("UNKNOWN INSTRUCTION")
+			}
+		}
+
+		part_1_result = signal;
+
+		let part_1_end = Instant::now();
+		part_1_times.push(part_1_end.duration_since(part_1_start).as_nanos());
+	}
+
+	part_1_times.sort();
+	println!("---------- DAY: 09 - PART 1 ----------");
+	println!("Result:   \n{}\n",  part_1_result);
+	println!("Iterations: {}", iterations);
+	println!("Mean:       {}ns",   part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
+	println!("Median:     {}ns",   part_1_times[part_1_times.len() / 2]);
+	println!("Min:        {}ns",   part_1_times[0]);
+	println!("Max:        {}ns",   part_1_times[part_1_times.len() -1]);	
+	println!("Total:      {}ns\n", part_1_times.iter().sum::<u128>());
+
+	println!("{}", part_1_result);
+
+
+
+	// Part 2
+	let mut part_2_result = String::new();
+
+	let mut part_2_times = Vec::new();
+	for _iteration in 0..iterations
+	{
+		let part_2_start = Instant::now();
+
+		let mut register_x = 1i64;
+		let mut cycle_count = 0i64;
 		let mut output = String::new();
 
 		for i in &instructions
@@ -109,41 +157,31 @@ fn main()
 			match i.operator.as_str()
 			{
 				"addx" => {
-					output.push_str(&increment_cycle(register_X, &mut cycle_count));
-					signal += calc_signal_strength(register_X, cycle_count);
-					output.push_str(&increment_cycle(register_X, &mut cycle_count));
-					signal += calc_signal_strength(register_X, cycle_count);
-					register_X += i.operand;
+					output.push_str(&increment_cycle(register_x, &mut cycle_count));
+					output.push_str(&increment_cycle(register_x, &mut cycle_count));
+					register_x += i.operand;
 				},
 				"noop" => {
-					output.push_str(&increment_cycle(register_X, &mut cycle_count));
-					signal += calc_signal_strength(register_X, cycle_count);
+					output.push_str(&increment_cycle(register_x, &mut cycle_count));
 				},
 				_ => panic!("UNKNOWN INSTRUCTION")
 			}
 		}
 
-		part_1_result = signal;
 		part_2_result = output;
 
-		let part_1_end = Instant::now();
-		part_1_times.push(part_1_end.duration_since(part_1_start).as_micros());
+		let part_2_end = Instant::now();
+		part_2_times.push(part_2_end.duration_since(part_2_start).as_micros());
 	}
 
-	part_1_times.sort();
-	println!("---------- DAY: 09 - PART 1 ----------");
-	println!("Result:     {}\n", part_1_result);
+	part_2_times.sort();
+	println!("---------- DAY: 09 - PART 2 ----------");
+	println!("Result:   \n{}\n",   part_2_result);
 	println!("Iterations: {}", iterations);
-	println!("Mean:       {}µs", part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
-	println!("Median:     {}µs", part_1_times[part_1_times.len() / 2]);
-	println!("Min:        {}µs", part_1_times[0]);
-	println!("Max:        {}µs\n", part_1_times[part_1_times.len() -1]);	
-
-	println!("{}", part_1_result);
-	println!("{}", part_2_result);
-
-
-
-	// Part 2
+	println!("Mean:       {}µs",   part_2_times.iter().sum::<u128>()/(iterations as u128));
+	println!("Median:     {}µs",   part_2_times[iterations / 2]);
+	println!("Min:        {}µs",   part_2_times[0]);
+	println!("Max:        {}µs",   part_2_times[iterations -1]);	
+	println!("Total:      {}µs\n", part_2_times.iter().sum::<u128>());
 
 }
