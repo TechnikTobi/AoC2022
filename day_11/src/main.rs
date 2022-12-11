@@ -2,9 +2,7 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::time::Instant;
 use std::str::FromStr;
-use num::integer::gcd;
 
 /// Reads in groups of lines (groups are separated by empty lines) and puts all
 /// elements of a group into a Vec<T> vector. 
@@ -47,7 +45,6 @@ pub fn read_vecs
 struct
 Monkey
 {
-	monkey_id: usize,
 	starting_items: VecDeque<i64>,
 	operation: char,
 	operand_str: String,
@@ -67,10 +64,7 @@ fn main()
 	let mut monkeys = Vec::new();
 
 	for raw_monkey in &raw_monkeys
-	{
-		println!("NEW MONKEY:");
-		
-		let monkey_id = raw_monkey[0].chars().nth(7).unwrap().to_string().parse::<usize>().unwrap();
+	{		
 		let starting_items = raw_monkey[1][18..].split(", ")
 			.map(i64::from_str)
 			.map(Result::unwrap_or_default)
@@ -83,7 +77,6 @@ fn main()
 
 		monkeys.push(Monkey
 			{
-				monkey_id: monkey_id,
 				starting_items: starting_items,
 				operation: operation,
 				operand_str: operand_str,
@@ -93,12 +86,7 @@ fn main()
 				inspected_items: 0
 			}
 		);
-
-		println!("{:?}", monkeys[monkeys.len()-1]);
-
 	}
-
-	println!("END");
 
 	let mut monkeys_part_1 = monkeys.clone();
 	let mut monkeys_part_2 = monkeys.clone();
@@ -106,7 +94,7 @@ fn main()
 	// Part 1
 	let rounds = 20;
 
-	for round in 0..rounds
+	for _ in 0..rounds
 	{
 		
 		for i in 0..monkeys_part_1.len()
@@ -152,10 +140,9 @@ fn main()
 		}
 	}
 
-	for monkey in &monkeys_part_1
-	{
-		println!("{:?}", monkey)
-	}
+	monkeys_part_1.sort_by(|a, b| a.inspected_items.cmp(&b.inspected_items));
+	let monkey_business_part_1 = monkeys_part_1[monkeys_part_1.len()-1].inspected_items * monkeys_part_1[monkeys_part_1.len()-2].inspected_items;
+	println!("Part 1: {}", monkey_business_part_1);
 
 
 
@@ -167,7 +154,7 @@ fn main()
 		divisor *= monkey.test;
 	}
 
-	for round in 0..rounds
+	for _ in 0..rounds
 	{
 		
 		for i in 0..monkeys_part_2.len()
@@ -196,11 +183,6 @@ fn main()
 					_ => panic!("AH"),
 				};
 
-				// item = item % (2^16);
-
-				// item /= 3;
-				// item = item % 3; // + monkeys_part_2[i].test;
-
 				let new_monkey_id = if item % monkeys_part_2[i].test == 0
 				{
 					monkeys_part_2[i].true_monkey
@@ -215,14 +197,8 @@ fn main()
 		}
 	}
 
-	println!(" ");
-	for monkey in &monkeys_part_2
-	{
-		println!("{:?}", monkey)
-	}
-	
-
-
-
+	monkeys_part_2.sort_by(|a, b| a.inspected_items.cmp(&b.inspected_items));
+	let monkey_business_part_2 = monkeys_part_2[monkeys_part_2.len()-1].inspected_items * monkeys_part_2[monkeys_part_2.len()-2].inspected_items;
+	println!("Part 2: {}", monkey_business_part_2);
 
 }
