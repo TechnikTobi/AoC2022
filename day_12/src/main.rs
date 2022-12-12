@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 #[allow(dead_code)]
 pub fn read_string_data
@@ -65,6 +64,25 @@ Position
 		return (self.x - other.x).abs() + (self.y - other.y).abs() <= 1;
 	}
 
+	fn
+	is_neighbour_part_2
+	(
+		&self,
+		other: &Position
+	)
+	-> bool
+	{
+		if self.x == -1
+		{
+			return other.z == 1;
+		}
+		if other.x == -1
+		{
+			return self.z == 1;
+		}
+		return (self.x - other.x).abs() + (self.y - other.y).abs() <= 1;
+	}
+
 }
 
 
@@ -106,7 +124,7 @@ dijkstra
 		positions = VecDeque::from_iter(positions_vec);
 		let u = positions.pop_front().unwrap();
 
-		for mut position in &mut positions
+		for position in &mut positions
 		{
 			if position.is_neighbour(&u) && position.z <= (u.z + 1)
 			{
@@ -138,6 +156,66 @@ dijkstra
 	}
 
 	return path.len() as i64;
+}
+
+fn
+dijkstra_part_2
+(
+	end: &Position,
+	positions_original: &VecDeque<Position>
+)
+-> i64
+{
+	let mut positions = positions_original.clone();
+	let mut predecessor = HashMap::new();
+	let mut distance = HashMap::new();
+	
+	let start = Position { x: -1, y: -1, z: 100, visited: false, is_end: false};
+	positions.push_front(start.clone());
+
+	for position in &positions
+	{
+		distance.insert(
+			position.clone(),
+			if position.x == -1 { 0i64 } else { 100000000000i64 }
+		);		
+	}
+
+	while !positions.is_empty()
+	{
+		let mut positions_vec = Vec::from_iter(positions);
+		positions_vec.sort_by(|a,b| distance[a].cmp(&distance[b]));
+		positions = VecDeque::from_iter(positions_vec);
+		let u = positions.pop_front().unwrap();
+
+		for position in &mut positions
+		{
+			if position.is_neighbour_part_2(&u) && position.z <= (u.z + 1)
+			{
+				let alternative = distance[&u] + 1;
+				if alternative < distance[&position]
+				{
+					distance.insert(position.clone(), alternative);
+					predecessor.insert(position.clone(), u.clone());
+				}
+			}
+		}
+	}
+
+	let mut path = VecDeque::new();
+	path.push_front(end.clone());
+	let mut u = end.clone();
+	if !predecessor.contains_key(&u)
+	{
+		return 1000000000i64;
+	}
+	while predecessor[&u] != start
+	{
+		u = predecessor[&u].clone();
+		path.push_front(u.clone());
+	}
+
+	return path.len() as i64 - 1;
 }
 
 fn main() 
@@ -185,45 +263,19 @@ fn main()
 		y += 1;
 	}
 
-	
+
 	let part_1_result = dijkstra(
 		&start.clone(),
 		&end.clone(),
 		&mut positions.clone()
 	);
-
-
-
-
-
 	println!("{}", part_1_result);
 
 
-
-	let mut min_distance = 10000000000i64;
-	let mut counter = 0;
-	for position in &positions
-	{
-		if position.z == 1
-		{
-			counter += 1;
-			println!("{}", counter);
-			let new_distance = dijkstra(
-				&position.clone(),
-				&end.clone(),
-				&mut positions.clone()
-			);
-			min_distance = std::cmp::min(min_distance, new_distance);
-		}
-	}
-
-	println!("{}", min_distance);
-
-
-
-
-
-
-
+	let part_2_result = dijkstra_part_2(
+		&end.clone(),
+		&mut positions.clone()
+	);
+	println!("{}", part_2_result);
 
 }
