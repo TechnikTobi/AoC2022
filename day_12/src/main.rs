@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -25,7 +26,7 @@ pub fn read_string_data
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct
 Position
 {
@@ -168,9 +169,11 @@ fn main()
 		std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
-	let mut positions = Vec::new();
+	let mut positions = VecDeque::new();
 	let mut start = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
 	let mut end = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
+
+	let mut distance = HashMap::new();
 
 	let mut y = 0;
 	for line in &lines
@@ -195,12 +198,23 @@ fn main()
 			if elevation == 'S'
 			{
 				start = new_position.clone();
+				distance.insert(
+					start.clone(),
+					0
+				);
+			}
+			else
+			{
+				distance.insert(
+					new_position.clone(),
+					100000000000i64
+				);
 			}
 			if elevation == 'E'
 			{
 				end = new_position.clone();
 			}
-			positions.push(new_position);
+			positions.push_back(new_position);
 			x += 1;
 		}
 		y += 1;
@@ -209,119 +223,176 @@ fn main()
 	let width = lines[0].len() as i64;
 	let height = lines.len() as i64;
 
-	positions.sort_by(|a, b| b.z.cmp(&a.z));
 	let mut current = start.clone();
-	let mut last_good_current = VecDeque::<Position>::new();
-	last_good_current.push_back(current.clone());
 
-	let mut visited = 0;
+	let mut predecessor = HashMap::new();
 
-	let mut counter = 0;
-
-	while !current.is_end
+	while !positions.is_empty()
 	{
+		println!("{}", positions.len());
+		let mut positions_vec = Vec::from_iter(positions);
+		positions_vec.sort_by(|a,b| distance[a].cmp(&distance[b]));
+		positions = VecDeque::from_iter(positions_vec);
+		let u = positions.pop_front().unwrap();
 
-		counter += 1;
-		if counter % 100 == 0
+		let mut no_neighbour_found = true;
+
+		for mut position in &mut positions
 		{
-			for i in 0..height
+			if position.is_neighbour(&u) && position.z <= (u.z + 1)
 			{
-				for j in 0..width
+				no_neighbour_found = false;
+				let alternative = distance[&u] + 1;
+				if alternative < distance[&position]
 				{
-					// if positions.iter().filter(|&x| x.x == j && x.y == i).next().unwrap().visited
-					// {
-					// 	print!("#");
-					// }
-					// else
-					// {
-					// 	print!(" ");
-					// }
-					if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
-			{
-				if pos.visited
-				{
-					print!("#");
+					distance.insert(position.clone(), alternative);
+					predecessor.insert(position.clone(), u.clone());
 				}
 			}
-			else
-			{
-				print!(" ");
-			}
-				}
-				print!("\n");
-			}
-			print!("\n");
 		}
 
+		if no_neighbour_found
+		{
+			break;
+		}
+	}
 
-		visited += 1;
-		println!("Visiting {:?}", current);
-		let mut options = positions
-			.iter()
-			.filter(|&x| x.is_neighbour(&current))
-			.filter(|&x| !x.visited)
-			.filter(|&x| x.z - current.z <= 1)
-			.map(|x| x.clone())
-			.collect::<Vec<Position>>();
+	let mut path = VecDeque::new();
+	path.push_front(end.clone());
+	let mut u = end.clone();
+	while predecessor[&u] != start
+	{
+		u = predecessor[&u].clone();
+		path.push_front(u.clone());
+	}
+
+	println!("{}", path.len());
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// positions.sort_by(|a, b| b.z.cmp(&a.z));
+	// let mut current = start.clone();
+	// let mut last_good_current = VecDeque::<Position>::new();
+	// last_good_current.push_back(current.clone());
+
+	// let mut visited = 0;
+
+	// let mut counter = 0;
+
+	// while !current.is_end
+	// {
+
+	// 	counter += 1;
+	// 	if counter % 100 == 0
+	// 	{
+	// 		for i in 0..height
+	// 		{
+	// 			for j in 0..width
+	// 			{
+	// 				// if positions.iter().filter(|&x| x.x == j && x.y == i).next().unwrap().visited
+	// 				// {
+	// 				// 	print!("#");
+	// 				// }
+	// 				// else
+	// 				// {
+	// 				// 	print!(" ");
+	// 				// }
+	// 				if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
+	// 		{
+	// 			if pos.visited
+	// 			{
+	// 				print!("#");
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			print!(" ");
+	// 		}
+	// 			}
+	// 			print!("\n");
+	// 		}
+	// 		print!("\n");
+	// 	}
+
+
+	// 	visited += 1;
+	// 	println!("Visiting {:?}", current);
+	// 	let mut options = positions
+	// 		.iter()
+	// 		.filter(|&x| x.is_neighbour(&current))
+	// 		.filter(|&x| !x.visited)
+	// 		.filter(|&x| x.z - current.z <= 1)
+	// 		.map(|x| x.clone())
+	// 		.collect::<Vec<Position>>();
 		
-		if options.is_empty()
-		{
-			current = last_good_current.pop_back().unwrap();
-			visited -= 1;
-		}
-		else
-		{
-			// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
-			// options.sort_by(|a,)
-			// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
-			// options.sort_by(|a, b| b.x.cmp(&a.x));
-			// options.sort_by(|a, b| b.z.cmp(&a.z));
-			options.sort_by(|a, b| a.distance_to_nearest_heigher(&positions).cmp(&b.distance_to_nearest_heigher(&positions)));
-			if current.x < 2 
-			{
-				options.sort_by(|a, b| b.y.cmp(&a.y));	
-			}
-			// if (current.x > 7 && current.x < 11)
-			// {
-			// 	options.sort_by(|a, b| b.y.cmp(&a.y));	
-			// }
-			options.sort_by(|a, b| b.z.cmp(&a.z));
-			current = options[0].clone();
-			last_good_current.push_back(current.clone());
+	// 	if options.is_empty()
+	// 	{
+	// 		current = last_good_current.pop_back().unwrap();
+	// 		visited -= 1;
+	// 	}
+	// 	else
+	// 	{
+	// 		// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
+	// 		// options.sort_by(|a,)
+	// 		// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
+	// 		// options.sort_by(|a, b| b.x.cmp(&a.x));
+	// 		// options.sort_by(|a, b| b.z.cmp(&a.z));
+	// 		options.sort_by(|a, b| a.distance_to_nearest_heigher(&positions).cmp(&b.distance_to_nearest_heigher(&positions)));
+	// 		if current.x < 2 
+	// 		{
+	// 			options.sort_by(|a, b| b.y.cmp(&a.y));	
+	// 		}
+	// 		// if (current.x > 7 && current.x < 11)
+	// 		// {
+	// 		// 	options.sort_by(|a, b| b.y.cmp(&a.y));	
+	// 		// }
+	// 		options.sort_by(|a, b| b.z.cmp(&a.z));
+	// 		current = options[0].clone();
+	// 		last_good_current.push_back(current.clone());
 
-			for mut position in &mut positions
-			{
-				if position.equals(&current)
-				{
-					position.visited = true;
-				}
-			}
-		}
-	}
+	// 		for mut position in &mut positions
+	// 		{
+	// 			if position.equals(&current)
+	// 			{
+	// 				position.visited = true;
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	for i in 0..height
-	{
-		for j in 0..width
-		{
-			if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
-			{
-				print!("#");	
-			}
-			else
-			{
-				print!(" ");
-			}
-		}
-		print!("\n");
-	}
-	print!("\n");
+	// for i in 0..height
+	// {
+	// 	for j in 0..width
+	// 	{
+	// 		if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
+	// 		{
+	// 			print!("#");	
+	// 		}
+	// 		else
+	// 		{
+	// 			print!(" ");
+	// 		}
+	// 	}
+	// 	print!("\n");
+	// }
+	// print!("\n");
 
 
-	// let a = recursive_solve(
-	// 	&start,
-	// 	&mut positions
-	// );
+	// // let a = recursive_solve(
+	// // 	&start,
+	// // 	&mut positions
+	// // );
 
-	println!("{}", last_good_current.len());
-	println!("{}", visited);
+	// println!("{}", last_good_current.len());
+	// println!("{}", visited);
 }
