@@ -52,132 +52,57 @@ Position
 		(self.y == other.y) &&
 		(self.z == other.z);
 	}
-
-	fn
-	is_neighbour
-	(
-		&self,
-		other: &Position
-	)
-	-> bool
-	{
-		return (self.x - other.x).abs() + (self.y - other.y).abs() <= 1;
-	}
-
-	fn
-	is_neighbour_part_2
-	(
-		&self,
-		other: &Position
-	)
-	-> bool
-	{
-		if self.x == -1
-		{
-			return other.z == 1;
-		}
-		if other.x == -1
-		{
-			return self.z == 1;
-		}
-		return (self.x - other.x).abs() + (self.y - other.y).abs() <= 1;
-	}
-
 }
 
+fn
+is_neighbour_part_1
+(
+	a: &Position,
+	b: &Position
+)
+-> bool
+{
+	return (a.x - b.x).abs() + (a.y - b.y).abs() <= 1;
+}
+
+fn
+is_neighbour_part_2
+(
+	a: &Position,
+	b: &Position
+)
+-> bool
+{
+	if a.x == -1
+	{
+		return b.z == 1;
+	}
+	if b.x == -1
+	{
+		return a.z == 1;
+	}
+	return (a.x - b.x).abs() + (a.y - b.y).abs() <= 1;
+}
 
 fn
 dijkstra
 (
 	start: &Position,
 	end: &Position,
-	positions_original: &VecDeque<Position>
+	positions_original: &VecDeque<Position>,
+	neighbour_function: fn(&Position, &Position) -> bool,
 )
 -> i64
 {
 	let mut positions = positions_original.clone();
 	let mut predecessor = HashMap::new();
 	let mut distance = HashMap::new();
-
-	for position in &positions
-	{
-		if position.equals(start)
-		{
-			distance.insert(
-				start.clone(),
-				0
-			);
-		}
-		else
-		{
-			distance.insert(
-				position.clone(),
-				100000000000i64
-			);
-		}
-	}
-
-	while !positions.is_empty()
-	{
-		let mut positions_vec = Vec::from_iter(positions);
-		positions_vec.sort_by(|a,b| distance[a].cmp(&distance[b]));
-		positions = VecDeque::from_iter(positions_vec);
-		let u = positions.pop_front().unwrap();
-
-		for position in &mut positions
-		{
-			if position.is_neighbour(&u) && position.z <= (u.z + 1)
-			{
-				let alternative = distance[&u] + 1;
-				if alternative < distance[&position]
-				{
-					distance.insert(position.clone(), alternative);
-					predecessor.insert(position.clone(), u.clone());
-				}
-			}
-		}
-	}
-
-	let mut path = VecDeque::new();
-	path.push_front(end.clone());
-	let mut u = end.clone();
-	if !predecessor.contains_key(&u)
-	{
-		return 1000000000i64;
-	}
-	while predecessor[&u] != *start
-	{
-		u = predecessor[&u].clone();
-		if !predecessor.contains_key(&u)
-		{
-			return 1000000000i64;
-		}
-		path.push_front(u.clone());
-	}
-
-	return path.len() as i64;
-}
-
-fn
-dijkstra_part_2
-(
-	end: &Position,
-	positions_original: &VecDeque<Position>
-)
--> i64
-{
-	let mut positions = positions_original.clone();
-	let mut predecessor = HashMap::new();
-	let mut distance = HashMap::new();
-	
-	let start = Position { x: -1, y: -1, z: 100, visited: false, is_end: false};
-	positions.push_front(start.clone());
 
 	for position in &positions
 	{
 		distance.insert(
 			position.clone(),
-			if position.x == -1 { 0i64 } else { 100000000000i64 }
+			if position.equals(&start){ 0i64 } else { 100000000000i64 }
 		);		
 	}
 
@@ -190,7 +115,7 @@ dijkstra_part_2
 
 		for position in &mut positions
 		{
-			if position.is_neighbour_part_2(&u) && position.z <= (u.z + 1)
+			if neighbour_function(&position, &u) && position.z <= (u.z + 1)
 			{
 				let alternative = distance[&u] + 1;
 				if alternative < distance[&position]
@@ -209,13 +134,13 @@ dijkstra_part_2
 	{
 		return 1000000000i64;
 	}
-	while predecessor[&u] != start
+	while !predecessor[&u].equals(start)
 	{
 		u = predecessor[&u].clone();
 		path.push_front(u.clone());
 	}
 
-	return path.len() as i64 - 1;
+	return path.len() as i64;
 }
 
 fn main() 
@@ -226,14 +151,13 @@ fn main()
 	).unwrap();
 
 	let mut positions = VecDeque::new();
+	
 	let mut start = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
 	let mut end = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
 
-	let mut y = 0;
-	for line in &lines
+	for (y, line) in lines.iter().enumerate()
 	{
-		let mut x = 0;
-		for elevation in line.chars()
+		for (x, elevation) in line.chars().enumerate()
 		{
 			let new_position_elevation = match elevation
 			{
@@ -243,8 +167,8 @@ fn main()
 			};
 			let new_position = Position 
 			{
-				x: x,
-				y: y,
+				x: x as i64,
+				y: y as i64,
 				z: new_position_elevation,
 				visited: elevation == 'S',
 				is_end: elevation == 'E',
@@ -258,24 +182,37 @@ fn main()
 				end = new_position.clone();
 			}
 			positions.push_back(new_position);
-			x += 1;
 		}
-		y += 1;
 	}
 
+
+
+	// Part 1
+	let mut positions_part_1 = positions.clone();
 
 	let part_1_result = dijkstra(
 		&start.clone(),
 		&end.clone(),
-		&mut positions.clone()
+		&mut positions_part_1,
+		is_neighbour_part_1
 	);
+
 	println!("{}", part_1_result);
 
 
-	let part_2_result = dijkstra_part_2(
+
+	// Part 2
+	let mut positions_part_2 = positions.clone();
+	start = Position { x: -1, y: -1, z: 100, visited: false, is_end: false};
+	positions_part_2.push_front(start.clone());
+
+	let part_2_result = dijkstra(
+		&start.clone(),
 		&end.clone(),
-		&mut positions.clone()
-	);
+		&mut positions_part_2,
+		is_neighbour_part_2
+	) - 1; // Minus 1 due to the artifical start node
+
 	println!("{}", part_2_result);
 
 }
