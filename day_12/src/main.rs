@@ -63,6 +63,34 @@ Position
 	{
 		return (self.x - other.x).abs() + (self.y - other.y).abs() <= 1;
 	}
+
+	fn
+	distance_to
+	(
+		&self,
+		other: &Position
+	)
+	-> i64
+	{
+		return (self.x - other.x).abs() + (self.y - other.y).abs();	
+	}
+
+	fn
+	distance_to_nearest_heigher
+	(
+		&self,
+		positions: &Vec<Position>
+	)
+	-> i64
+	{
+		let mut distance = positions.len() as i64;
+		for other in positions.iter().filter(|&x| x.z == self.z + 1)
+		{
+			distance = std::cmp::min(distance, self.distance_to(other));
+		}
+		return distance;
+	}
+
 }
 
 fn
@@ -142,6 +170,7 @@ fn main()
 
 	let mut positions = Vec::new();
 	let mut start = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
+	let mut end = Position { x: -1, y: -1, z: -1, visited: false, is_end: false};
 
 	let mut y = 0;
 	for line in &lines
@@ -160,12 +189,16 @@ fn main()
 				x: x,
 				y: y,
 				z: new_position_elevation,
-				visited: false,
+				visited: elevation == 'S',
 				is_end: elevation == 'E',
 			};
 			if elevation == 'S'
 			{
 				start = new_position.clone();
+			}
+			if elevation == 'E'
+			{
+				end = new_position.clone();
 			}
 			positions.push(new_position);
 			x += 1;
@@ -173,12 +206,122 @@ fn main()
 		y += 1;
 	}
 
+	let width = lines[0].len() as i64;
+	let height = lines.len() as i64;
+
 	positions.sort_by(|a, b| b.z.cmp(&a.z));
+	let mut current = start.clone();
+	let mut last_good_current = VecDeque::<Position>::new();
+	last_good_current.push_back(current.clone());
 
-	let a = recursive_solve(
-		&start,
-		&mut positions
-	);
+	let mut visited = 0;
 
-	println!("{}", a.1-1);
+	let mut counter = 0;
+
+	while !current.is_end
+	{
+
+		counter += 1;
+		if counter % 100 == 0
+		{
+			for i in 0..height
+			{
+				for j in 0..width
+				{
+					// if positions.iter().filter(|&x| x.x == j && x.y == i).next().unwrap().visited
+					// {
+					// 	print!("#");
+					// }
+					// else
+					// {
+					// 	print!(" ");
+					// }
+					if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
+			{
+				if pos.visited
+				{
+					print!("#");
+				}
+			}
+			else
+			{
+				print!(" ");
+			}
+				}
+				print!("\n");
+			}
+			print!("\n");
+		}
+
+
+		visited += 1;
+		println!("Visiting {:?}", current);
+		let mut options = positions
+			.iter()
+			.filter(|&x| x.is_neighbour(&current))
+			.filter(|&x| !x.visited)
+			.filter(|&x| x.z - current.z <= 1)
+			.map(|x| x.clone())
+			.collect::<Vec<Position>>();
+		
+		if options.is_empty()
+		{
+			current = last_good_current.pop_back().unwrap();
+			visited -= 1;
+		}
+		else
+		{
+			// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
+			// options.sort_by(|a,)
+			// options.sort_by(|a, b| a.distance_to(&end).cmp(&b.distance_to(&end)));
+			// options.sort_by(|a, b| b.x.cmp(&a.x));
+			// options.sort_by(|a, b| b.z.cmp(&a.z));
+			options.sort_by(|a, b| a.distance_to_nearest_heigher(&positions).cmp(&b.distance_to_nearest_heigher(&positions)));
+			if current.x < 2 
+			{
+				options.sort_by(|a, b| b.y.cmp(&a.y));	
+			}
+			// if (current.x > 7 && current.x < 11)
+			// {
+			// 	options.sort_by(|a, b| b.y.cmp(&a.y));	
+			// }
+			options.sort_by(|a, b| b.z.cmp(&a.z));
+			current = options[0].clone();
+			last_good_current.push_back(current.clone());
+
+			for mut position in &mut positions
+			{
+				if position.equals(&current)
+				{
+					position.visited = true;
+				}
+			}
+		}
+	}
+
+	for i in 0..height
+	{
+		for j in 0..width
+		{
+			if let Some(pos) = last_good_current.iter().filter(|&x| x.x == j && x.y == i).next()
+			{
+				print!("#");	
+			}
+			else
+			{
+				print!(" ");
+			}
+		}
+		print!("\n");
+	}
+	print!("\n");
+
+
+	// let a = recursive_solve(
+	// 	&start,
+	// 	&mut positions
+	// );
+
+	println!("{}", last_good_current.len());
+	println!("{}", visited);
 }
