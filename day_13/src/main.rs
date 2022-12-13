@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -34,7 +32,7 @@ Value
 	fn is_list(&self) -> bool;
 	fn get_value(&self) -> u64;
 	fn get_values(&self) -> &Vec<Box<dyn Value>>;
-	fn compare(&self, other: &dyn Value) -> i8;
+	fn compare(&self, other: &dyn Value) -> std::cmp::Ordering;
 	fn print(&self);
 }
 
@@ -52,50 +50,36 @@ struct List
 impl Value for Integer
 {
 	fn to_list(&self) -> List { List { values: vec![Box::new(self.clone())] } }
-	fn is_list(&self) -> bool { false }
-	fn compare(&self, right: &dyn Value) -> i8 // self is Left
-	{
-		print!("Comparing ");
-		self.print();
-		print!(" vs ");
-		right.print();
-		print!("\n");
 
+	fn is_list(&self) -> bool { false }
+
+	fn compare(&self, right: &dyn Value) -> std::cmp::Ordering // self is Left
+	{
 		if right.is_list()
 		{
 			return self.to_list().compare(right);
 		}
 		else
 		{
-			if self.value < right.get_value()
-			{
-				return 1;
-			}
-			if self.value == right.get_value()
-			{
-				return 0;
-			}
-			return -1;
+			return self.value.cmp(&right.get_value()).reverse();
 		}
 	}
 
 	fn get_value(&self) -> u64 { self.value }
+
 	fn get_values(&self) -> &Vec<Box<dyn Value>> { panic!("AH2"); }
+
 	fn print(&self) {print!("{}", self.value); }
 }
 
 impl Value for List
 {
-	fn to_list(&self) -> List { panic!("AH3") }
-	fn is_list(&self) -> bool { true }
-	fn compare(&self, right: &dyn Value) -> i8
-	{
-		print!("Comparing ");
-		self.print();
-		print!("vs ");
-		right.print();
-		print!("\n");
+	fn to_list(&self) -> List { panic!("AH3"); }
 
+	fn is_list(&self) -> bool { true }
+
+	fn compare(&self, right: &dyn Value) -> std::cmp::Ordering
+	{
 		if right.is_list()
 		{
 			let right_list = right.get_values();
@@ -103,32 +87,20 @@ impl Value for List
 			for i in 0..length
 			{
 				let comparison_result = self.values[i].compare(&*right_list[i]);
-				if comparison_result == 1
+				if comparison_result != std::cmp::Ordering::Equal
 				{
-					return 1;
-				}
-				if comparison_result == -1
-				{
-					return -1;
+					return comparison_result;
 				}
 			}
-			if self.values.len() < right_list.len()
-			{
-				return 1;
-			}
-			if self.values.len() == right_list.len()
-			{
-				return 0;
-			}
-			return -1
+			return self.values.len().cmp(&right_list.len()).reverse();
 		}
-		else
-		{
-			return self.compare(&right.to_list());
-		}
+		return self.compare(&right.to_list());
 	}
+
 	fn get_value(&self) -> u64 { panic!("AH"); }
+
 	fn get_values(&self) -> &Vec<Box<dyn Value>> { &self.values }
+
 	fn print(&self) 
 	{
 		print!("[");
@@ -147,36 +119,31 @@ fn parse_string
 )
 -> Box<dyn Value>
 {
-	let data_len = data.len();
-
-	if data_len == 0
+	if data.is_empty()
 	{
 		return Box::new(List {values: Vec::new() });
 	}
 
-	if data.chars().next().unwrap() == '[' && data.chars().last().unwrap() == ']'
+	if 
+		data.chars().next().unwrap() == '[' && 
+		data.chars().last().unwrap() == ']'
 	{
 		let mut substrings = Vec::new();
 		let mut temp = String::new();
 		let mut bracket_count = 0;
-		for character in data[1..data_len-1].chars()
+
+		for character in data[1..data.len()-1].chars()
 		{
-			if character == ' '
+			match character
 			{
-				continue;
-			}
-			if character == '['
-			{
-				bracket_count += 1;
-			}
-			if bracket_count > 0
-			{
-				temp.push(character);
-			}
-			if character == ']'
-			{
-				bracket_count -= 1;
-			}
+				' ' => continue,
+				'[' => bracket_count += 1,
+				_ => ()
+			};
+			
+			if bracket_count > 0 { temp.push(character); }
+			if character == ']'  { bracket_count -= 1; }
+
 			if bracket_count == 0
 			{
 				if character == ','
@@ -190,20 +157,12 @@ fn parse_string
 				}
 			}
 		}
-
 		substrings.push(temp);
 
-		println!("SUBSTRINGS:");
-		for substring in &substrings
-		{
-			println!("{}", substring);
-		}
-
-		let mut values = Vec::new();
-		for substring in &substrings
-		{
-			values.push(parse_string(substring.clone()));
-		}
+		let values = substrings
+			.iter()
+			.map(|substring| parse_string(substring.clone()))
+			.collect::<Vec<Box<dyn Value>>>();
 		return Box::new(List {values: values} );
 	}
 
@@ -216,32 +175,29 @@ fn main()
 		std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
+
+
+	// Part 1
 	let mut part_1_result = 0;
 	for i in (0..lines.len()).step_by(2)
 	{
-		println!("LEFT:");
-		println!("{}", lines[i]);
-		println!("RIGHT:");
-		println!("{}", lines[i+1]);
-
 		let left = parse_string(lines[i].clone());
 		let right = parse_string(lines[i+1].clone());
 
-		if left.compare(&*right) > 0
+		if left.compare(&*right) == std::cmp::Ordering::Greater
 		{
 			part_1_result += i/2+1;
-			println!("                      i: {}\n", i/2+1);
 		}
 	}
-
 	println!("Part 1: {}", part_1_result);
 
 
-	let mut values = Vec::new();
-	for line in &lines
-	{
-		values.push(parse_string(line.to_string()));
-	}
+
+	// Part 2
+	let mut values = lines
+		.iter()
+		.map(|line| parse_string(line.clone()))
+		.collect::<Vec<Box<dyn Value>>>();
 	
 	let two_box = Box::new(Integer {value: 2});
 	let six_box = Box::new(Integer {value: 6});
@@ -249,14 +205,7 @@ fn main()
 	values.push(Box::new(List { values: vec![two_box]}));
 	values.push(Box::new(List { values: vec![six_box]}));
 
-	values.sort_by(|a,b| 
-		match a.compare(&**b) 
-		{
-			1 => std::cmp::Ordering::Less,
-			-1 => std::cmp::Ordering::Greater,
-			_ => std::cmp::Ordering::Equal
-		}
-	);
+	values.sort_by(|a,b| a.compare(&**b).reverse());
 
 	let two_list = List { values: vec![ Box::new(Integer {value: 2}) ] };
 	let six_list = List { values: vec![ Box::new(Integer {value: 6}) ] };
@@ -266,26 +215,16 @@ fn main()
 
 	for (index, value) in values.iter().enumerate()
 	{
-		if value.compare(&two_list) == 0
+		if value.compare(&two_list).is_eq()
 		{
 			marker_1_index = index + 1;
-			print!("YES1");
 		}
-		if value.compare(&six_list) == 0
+		if value.compare(&six_list).is_eq()
 		{
 			marker_2_index = index + 1;
-			print!("YES2");
 		}
-		value.print();
-		print!("\n");
 	}
 
 	println!("Part 2: {}", marker_1_index * marker_2_index);
 
-	// for line in lines
-	// {
-	// 	parse_string(line.clone());
-	// 	let line_str = &line[1..line.len()-1];
-	// 	println!("{}", line_str);
-	// }
 }
