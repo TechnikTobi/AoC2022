@@ -89,7 +89,7 @@ fn main()
 
 	let iterations = 5000;
 
-	// Part 1 & 2
+	// Part 1
 	let mut part_1_result = 0;
 
 	let mut part_1_times = Vec::new();
@@ -127,7 +127,7 @@ fn main()
 	}
 
 	part_1_times.sort();
-	println!("---------- DAY: 09 - PART 1 ----------");
+	println!("---------- DAY: 10 - PART 1 ----------");
 	println!("Result:   \n{}\n",  part_1_result);
 	println!("Iterations: {}", iterations);
 	println!("Mean:       {}ns",   part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
@@ -175,7 +175,7 @@ fn main()
 	}
 
 	part_2_times.sort();
-	println!("---------- DAY: 09 - PART 2 ----------");
+	println!("---------- DAY: 10 - PART 2 ----------");
 	println!("Result:   \n{}\n",   part_2_result);
 	println!("Iterations: {}", iterations);
 	println!("Mean:       {}µs",   part_2_times.iter().sum::<u128>()/(iterations as u128));
