@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
+use std::time::Instant;
 
 pub fn read_string_data
 (
@@ -122,189 +122,220 @@ fn main()
 			}
 		}
 	}
-	let mut map_part_2 = map.clone();
+	let original_map = map.clone();
 
 	
+	let iterations = 100;
+
 
 	// Part 1
-	let mut current_moving_sand_position = Position {x: 500, y: 1};
+	let mut part_1_result = 0;
 
-	loop
+	let mut part_1_times = Vec::new();
+	for _iteration in 0..iterations
 	{
-		let below = Position {x: current_moving_sand_position.x, y: current_moving_sand_position.y+1 };
-		let left = Position {x: below.x-1, y: below.y };
-		let right = Position {x: left.x+2, y: left.y };
-		
-		if (map[&below] == Material::Air)
-		{
-			current_moving_sand_position.y += 1;
-		}
-		else if (map[&left] == Material::Air)
-		{
-			current_moving_sand_position.x -= 1;
-			current_moving_sand_position.y += 1;
-		}
-		else if (map[&right] == Material::Air)
-		{
-			current_moving_sand_position.x += 1;
-			current_moving_sand_position.y += 1;
-		}
-		else
-		{
-			map.insert(current_moving_sand_position.clone(), Material::Sand);
-			current_moving_sand_position = Position {x: 500, y: 1};
-		}
+		map = original_map.clone();
+		let part_1_start = Instant::now();
 
-		if current_moving_sand_position.y >= max_y
-		{
-			break;
-		}
-		
-	}
+		let mut current_moving_sand_position = Position {x: 500, y: 1};
 
-	for y in min_position.y..max_position.y+1
-	{
-		for x in min_position.x..max_position.x+1
+		loop
 		{
-			let position = Position {x: x, y: y};
-			if position == current_moving_sand_position
+			let below = Position {x: current_moving_sand_position.x, y: current_moving_sand_position.y+1 };
+			let left = Position {x: below.x-1, y: below.y };
+			let right = Position {x: left.x+2, y: left.y };
+			
+			if map[&below] == Material::Air
 			{
-				print!("o");
+				current_moving_sand_position.y += 1;
+			}
+			else if map[&left] == Material::Air
+			{
+				current_moving_sand_position.x -= 1;
+				current_moving_sand_position.y += 1;
+			}
+			else if map[&right] == Material::Air
+			{
+				current_moving_sand_position.x += 1;
+				current_moving_sand_position.y += 1;
 			}
 			else
 			{
-				match map[&position]
-				{
-					Material::Air => print!("."),
-					Material::Rock => print!("#"),
-					Material::Sand => print!("o"),
-					Material::SandSource => print!("+")
-				}
+				map.insert(current_moving_sand_position.clone(), Material::Sand);
+				current_moving_sand_position = Position {x: 500, y: 1};
 			}
-		}
-		print!("\n");
-	}
-	print!("\n");
 
-	let part_1_result = map.iter().filter(|(_, &material)| material == Material::Sand).count();
-	println!("{}", part_1_result);
-	
+			if current_moving_sand_position.y >= max_y
+			{
+				break;
+			}
+			
+		}
+		
+		part_1_result = map.iter().filter(|(_, &material)| material == Material::Sand).count();
+
+		let part_1_end = Instant::now();
+		part_1_times.push(part_1_end.duration_since(part_1_start).as_nanos());
+
+		// After last iteration is measured, print visualisation
+		if _iteration == iterations-1
+		{
+			for y in min_position.y..max_position.y+1
+			{
+				for x in min_position.x..max_position.x+1
+				{
+					let position = Position {x: x, y: y};
+					if position == current_moving_sand_position
+					{
+						print!("o");
+					}
+					else
+					{
+						match map[&position]
+						{
+							Material::Air => print!("."),
+							Material::Rock => print!("#"),
+							Material::Sand => print!("o"),
+							Material::SandSource => print!("+")
+						}
+					}
+				}
+				print!("\n");
+			}
+			print!("\n");
+		}
+	}
+
+	part_1_times.sort();
+	println!("---------- DAY: 14 - PART 1 ----------");
+	println!("Result:   \n{}\n",  part_1_result);
+	println!("Iterations: {}", iterations);
+	println!("Mean:       {}ns",   part_1_times.iter().sum::<u128>()/(part_1_times.len() as u128));
+	println!("Median:     {}ns",   part_1_times[part_1_times.len() / 2]);
+	println!("Min:        {}ns",   part_1_times[0]);
+	println!("Max:        {}ns",   part_1_times[part_1_times.len() -1]);	
+	println!("Total:      {}ns\n", part_1_times.iter().sum::<u128>());
 
 
 
 	// Part 2
-	// Fill in the floor
-	for x in (min_x-max_y)..(max_x+max_y+1)
+	let mut part_2_result = 0;
+
+	let mut part_2_times = Vec::new();
+	for _iteration in 0..iterations
 	{
-		let floor_position = Position { x: x, y: max_y + 2 };
-		map_part_2.insert(floor_position, Material::Rock);
-	}
+		let mut map_part_2 = original_map.clone();
 
-	// New max position
-	min_position = Position {x: min_x-max_y-1, y: min_y+0};
-	max_position = Position {x: max_x+max_y+1, y: max_y+3};
+		let part_2_start = Instant::now();
 
-	// Refill with air
-	for y in min_position.y..max_position.y+1
-	{
-		for x in min_position.x..max_position.x+1
+		// Fill in the floor
+		for x in (min_x-max_y)..(max_x+max_y+1)
 		{
-			let position = Position {x: x, y: y};
-			if !map_part_2.contains_key(&position)
+			let floor_position = Position { x: x, y: max_y + 2 };
+			map_part_2.insert(floor_position, Material::Rock);
+		}
+
+		// New max position
+		min_position = Position {x: min_x-max_y-1, y: min_y+0};
+		max_position = Position {x: max_x+max_y+1, y: max_y+3};
+
+		// Refill with air
+		for y in min_position.y..max_position.y+1
+		{
+			for x in min_position.x..max_position.x+1
 			{
-				map_part_2.insert(position, Material::Air);
-			}
-		}
-	}
-
-	let mut current_moving_sand_position = Position {x: 500, y: 0};
-
-	loop
-	{
-		let below = Position {x: current_moving_sand_position.x, y: current_moving_sand_position.y+1 };
-		let left = Position {x: below.x-1, y: below.y };
-		let right = Position {x: left.x+2, y: left.y };
-		
-		if (map_part_2[&below] == Material::Air)
-		{
-			current_moving_sand_position.y += 1;
-		}
-		else if (map_part_2[&left] == Material::Air)
-		{
-			current_moving_sand_position.x -= 1;
-			current_moving_sand_position.y += 1;
-		}
-		else if (map_part_2[&right] == Material::Air)
-		{
-			current_moving_sand_position.x += 1;
-			current_moving_sand_position.y += 1;
-		}
-		else
-		{
-			if map_part_2[&current_moving_sand_position] == Material::Sand
-			{
-				break;
-			}
-			map_part_2.insert(current_moving_sand_position.clone(), Material::Sand);
-			current_moving_sand_position = Position {x: 500, y: 0};
-		}
-
-		if current_moving_sand_position.y >= max_y + 2
-		{
-			break;
-		}
-
-		// for y in min_position.y..max_position.y+1
-		// {
-		// 	for x in min_position.x..max_position.x+1
-		// 	{
-		// 		let position = Position {x: x, y: y};
-		// 		if position == current_moving_sand_position
-		// 		{
-		// 			print!("o");
-		// 		}
-		// 		else
-		// 		{
-		// 			match map_part_2[&position]
-		// 			{
-		// 				Material::Air => print!("."),
-		// 				Material::Rock => print!("#"),
-		// 				Material::Sand => print!("o"),
-		// 				Material::SandSource => print!("+")
-		// 			}
-		// 		}
-		// 	}
-		// 	print!("\n");
-		// }
-		// print!("\n");
-		
-	}
-
-	for y in min_position.y..max_position.y+1
-	{
-		for x in min_position.x..max_position.x+1
-		{
-			let position = Position {x: x, y: y};
-			if position == current_moving_sand_position
-			{
-				print!("o");
-			}
-			else
-			{
-				match map_part_2[&position]
+				let position = Position {x: x, y: y};
+				if !map_part_2.contains_key(&position)
 				{
-					Material::Air => print!("."),
-					Material::Rock => print!("#"),
-					Material::Sand => print!("o"),
-					Material::SandSource => print!("+")
+					map_part_2.insert(position, Material::Air);
 				}
 			}
 		}
-		print!("\n");
-	}
-	print!("\n");
 
-	let part_2_result = map_part_2.iter().filter(|(_, &material)| material == Material::Sand).count();
-	println!("{}", part_2_result);
+		let mut current_moving_sand_position = Position {x: 500, y: 0};
+
+		loop
+		{
+			let below = Position {x: current_moving_sand_position.x, y: current_moving_sand_position.y+1 };
+			let left = Position {x: below.x-1, y: below.y };
+			let right = Position {x: below.x+1, y: below.y };
+			
+			if map_part_2[&below] == Material::Air
+			{
+				current_moving_sand_position.y += 1;
+			}
+			else if map_part_2[&left] == Material::Air
+			{
+				current_moving_sand_position.x -= 1;
+				current_moving_sand_position.y += 1;
+			}
+			else if map_part_2[&right] == Material::Air
+			{
+				current_moving_sand_position.x += 1;
+				current_moving_sand_position.y += 1;
+			}
+			else
+			{
+				// Is there already some sand?
+				if map_part_2[&current_moving_sand_position] == Material::Sand
+				{
+					break;
+				}
+				map_part_2.insert(current_moving_sand_position.clone(), Material::Sand);
+				current_moving_sand_position = Position {x: 500, y: 0};
+			}
+
+			if current_moving_sand_position.y >= max_y + 2
+			{
+				break;
+			}
+			
+		}
+
+		part_2_result = map_part_2.iter().filter(|(_, &material)| material == Material::Sand).count();
+
+		let part_2_end = Instant::now();
+		part_2_times.push(part_2_end.duration_since(part_2_start).as_micros());
+
+		// After last iteration is measured, print visualisation
+		if _iteration == iterations-1
+		{
+			for y in min_position.y..max_position.y+1
+			{
+				for x in min_position.x..max_position.x+1
+				{
+					let position = Position {x: x, y: y};
+					if position == current_moving_sand_position
+					{
+						print!("o");
+					}
+					else
+					{
+						match map_part_2[&position]
+						{
+							Material::Air => print!("."),
+							Material::Rock => print!("#"),
+							Material::Sand => print!("o"),
+							Material::SandSource => print!("+")
+						}
+					}
+				}
+				print!("\n");
+			}
+			print!("\n");
+		}
+	}
+
+
+
+	part_2_times.sort();
+	println!("---------- DAY: 14 - PART 2 ----------");
+	println!("Result:   \n{}\n",   part_2_result);
+	println!("Iterations: {}", iterations);
+	println!("Mean:       {}µs",   part_2_times.iter().sum::<u128>()/(iterations as u128));
+	println!("Median:     {}µs",   part_2_times[iterations / 2]);
+	println!("Min:        {}µs",   part_2_times[0]);
+	println!("Max:        {}µs",   part_2_times[iterations -1]);	
+	println!("Total:      {}µs\n", part_2_times.iter().sum::<u128>());
 
 }
