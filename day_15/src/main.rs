@@ -1,0 +1,287 @@
+use std::collections::HashMap;
+use std::fs::File;
+use std::hash::Hash;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn read_string_data
+(
+	path: &std::path::Path
+)
+-> Result<Vec<String>, Box<dyn std::error::Error>>
+{
+	let file = File::open(path)?;
+	let lines = BufReader::new(file).lines();
+	let mut data = Vec::<String>::new();
+
+	for result_line in lines
+	{
+		let line = result_line?;
+		data.push(line);
+	}
+
+	return Ok(data);	
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+struct 
+Position
+{
+	x: i64,
+	y: i64
+}
+
+#[derive(PartialEq, Clone, Copy)]
+enum
+Field
+{
+	Sensor,
+	Beacon,
+	NoBeacon,
+	Unknown
+}
+
+fn 
+parse_string
+(
+	data: &String
+)
+-> (Position, Position) // Sensor, closest beacon
+{
+    let mut temp = String::new();
+    let mut values = Vec::<i64>::new();
+
+    for (index, character) in data.chars().enumerate()
+    {
+        if character.is_digit(10) || character == '-'
+        {
+            temp.push(character);
+        }
+        
+        if character == ',' || character == ':' || index == data.len()-1
+        {
+            values.push(temp.parse::<i64>().unwrap());
+            temp.clear();
+        }
+    }
+
+    let sensor = Position {x: values[0], y: values[1]};
+    let beacon = Position {x: values[2], y: values[3]};
+
+    println!("{:?}", sensor);
+    println!("{:?}", beacon);
+
+    return (sensor, beacon);
+}
+
+fn
+manhatten_distance
+(
+    a: &Position,
+    b: &Position
+)
+-> i64
+{
+    return (a.x - b.x).abs() + (a.y - b.y).abs();
+}
+
+fn main() 
+{
+
+    let lines = read_string_data(
+		// std::path::Path::new("./data/example.txt"),
+        std::path::Path::new("./data/input.txt"),
+	).unwrap();
+
+    let part_1_y = 2000000;
+    let part_2_min = 0;
+    let part_2_max = 0;
+    // let part_1_y = 10;
+    
+    // Preprocessing
+    let mut closest_beacon = HashMap::new();
+    let mut map = HashMap::new();
+    for line in &lines
+    {
+        let (sensor, beacon) = parse_string(line);
+        closest_beacon.insert(sensor.clone(), beacon.clone());
+        map.insert(sensor, Field::Sensor);
+        map.insert(beacon, Field::Beacon);
+    }
+
+    let mut min_x = i64::MAX;
+    let mut min_y = i64::MAX;
+    let mut max_x = i64::MIN;
+    let mut max_y = i64::MIN;
+
+    for position in map.keys()
+	{
+		min_x = std::cmp::min(min_x, position.x);
+		min_y = std::cmp::min(min_y, position.y);
+		max_x = std::cmp::max(max_x, position.x);
+		max_y = std::cmp::max(max_y, position.y);
+	}
+
+    for (sensor, beacon) in &closest_beacon
+    {
+        let distance = manhatten_distance(&sensor, &beacon);
+        min_x = std::cmp::min(min_x, sensor.x-distance);
+        min_y = std::cmp::min(min_y, sensor.y-distance);
+        max_x = std::cmp::max(max_x, sensor.x+distance);
+        max_y = std::cmp::max(max_y, sensor.y+distance);
+    }
+
+    let mut min_position = Position {x: min_x, y: min_y};
+	let mut max_position = Position {x: max_x, y: max_y};
+
+    let mut part_1_map = map.clone();
+    let mut part_2_map = map.clone();
+
+    let mut part_1_closest_beacon = closest_beacon.clone();
+    let mut part_2_closest_beacon = closest_beacon.clone();
+
+
+	// {
+	// 	for x in min_position.x..max_position.x+1
+	// 	{
+	// 		let position = Position {x: x, y: y};
+    //         match part_1_map[&position]
+    //         {
+    //             Field::Beacon => print!("B"),
+    //             Field::Sensor => print!("S"),
+    //             Field::Unknown => print!("."),
+    //             Field::NoBeacon => print!("#"),
+    //         };
+	// 	}
+    //     print!("\n");
+	// }
+
+    println!("Checking 1...");
+    for (sensor, beacon) in part_1_closest_beacon
+    {
+        let distance = manhatten_distance(&sensor, &beacon);
+        println!("{:?}, {}", sensor, distance);
+
+        // if !(sensor.y + distance > part_1_y && sensor.y - distance < part_1_y)
+        // {
+        //     continue;
+        // }
+
+        // for y in std::cmp::min(part_1_y, sensor.y-distance-1)..std::cmp::max(part_1_y, sensor.y+distance+1)
+        // {
+            for x in (sensor.x-distance-2)..(sensor.x+distance+2)
+            {
+                let position = Position {x: x, y: part_1_y};
+                if manhatten_distance(&sensor, &position) <= distance
+                {
+                    if !map.contains_key(&position)
+                    {
+                        part_1_map.insert(position, Field::NoBeacon);
+                    }
+                }
+            }
+        // }
+
+        // for position in map.keys()
+        // {
+        //     if manhatten_distance(&sensor, position) <= distance
+        //     {
+        //         if part_1_map[&position] == Field::Unknown
+        //         {
+        //             part_1_map.insert(position.clone(), Field::NoBeacon);
+        //         }
+        //     }
+        // }
+    }
+
+    // for y in min_position.y..max_position.y+1
+	// {
+	// 	for x in min_position.x..max_position.x+1
+	// 	{
+	// 		let position = Position {x: x, y: y};
+    //         match part_1_map[&position]
+    //         {
+    //             Field::Beacon => print!("B"),
+    //             Field::Sensor => print!("S"),
+    //             Field::Unknown => print!("."),
+    //             Field::NoBeacon => print!("#"),
+    //         };
+	// 	}
+    //     print!("\n");
+	// }
+
+    let mut part_1_sum = 0;
+
+    for x in min_x..max_x+1
+    {
+        let position = Position{x: x, y: part_1_y};
+        if !part_1_map.contains_key(&position)
+        {
+            continue;
+        }
+        let value = part_1_map[&position];
+        if value != Field::Unknown && value != Field::Beacon && value != Field::Sensor
+        {
+            part_1_sum += 1;
+        }
+    }
+
+    // for (position, value) in part_1_map
+    // {
+    //     if position.y != part_1_y
+    //     {
+    //         continue;
+    //     }
+    //     if value != Field::Unknown && value != Field::Beacon
+    //     {
+    //         part_1_sum += 1;
+    //     }
+    // }
+
+    println!("{}", part_1_sum);
+
+
+
+
+
+
+
+
+
+
+    println!("Checking 2...");
+    for (sensor, beacon) in part_2_closest_beacon
+    {
+        let distance = manhatten_distance(&sensor, &beacon);
+        println!("{:?}, {}", sensor, distance);
+
+        for y in std::cmp::max(part_2_min, sensor.y-distance-1)..std::cmp::min(part_2_max, sensor.y+distance+1)
+        {
+            for x in std::cmp::max(part_2_min, sensor.x-distance-1)..std::cmp::min(part_2_max, sensor.x+distance+1)
+            {
+                let position = Position {x: x, y: y};
+                if manhatten_distance(&sensor, &position) <= distance
+                {
+                    if !map.contains_key(&position)
+                    {
+                        part_2_map.insert(position, Field::NoBeacon);
+                    }
+                }
+            }
+        }
+    }
+
+    for x in part_2_min..part_2_max+1
+    {
+        for y in part_2_min..part_2_max+1
+        {
+            let position = Position{x: x, y: y};
+            if !part_2_map.contains_key(&position)
+            {
+                println!("{:?}", position);
+                break;
+            }
+        }
+    }
+
+}
