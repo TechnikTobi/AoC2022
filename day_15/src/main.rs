@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufRead;
@@ -187,12 +188,14 @@ fn main()
 
     println!("Checking 2...");
 
-    let mut candidates = HashMap::new();
+    let mut candidates = HashSet::new();
 
     for (sensor, beacon) in &part_2_closest_beacon
     {
         let distance = manhatten_distance(&sensor, &beacon);
         println!("{:?}, {}", sensor, distance);
+
+        candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
 
         for i in 0..distance+2
         {
@@ -216,11 +219,11 @@ fn main()
             {
                 if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
                 {
-                    candidates.insert(new_position_1, Field::Unknown);
+                    candidates.insert(new_position_1);
                 }
                 if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
                 {
-                    candidates.insert(new_position_2, Field::Unknown);
+                    candidates.insert(new_position_2);
                 }
             }
 
@@ -228,40 +231,27 @@ fn main()
             {
                 if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
                 {
-                    candidates.insert(new_position_3, Field::Unknown);
+                    candidates.insert(new_position_3);
                 }
                 if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
                 {
-                    candidates.insert(new_position_4, Field::Unknown);
+                    candidates.insert(new_position_4);
                 }
             }
         }
     }
 
-    let candidates_keys = candidates.keys().map(|x| x.clone()).collect::<Vec<Position>>();
     for (sensor, beacon) in &part_2_closest_beacon
     {
-        for candidate in &candidates_keys
-        {
-            if candidates[&candidate] == Field::Unknown
-            {
-                let distance = manhatten_distance(sensor, beacon);
-                let candidate_distance = manhatten_distance(sensor, candidate);
-                if candidate_distance <= distance
-                {
-                    candidates.remove(candidate);
-                }
-            }
-        }
+        let distance = manhatten_distance(sensor, beacon);
+        candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
     }
 
-    for (candidate, field) in &candidates
+    println!("Candidates:");
+    for candidate in &candidates
     {
-        if *field == Field::Unknown
-        {
-            println!("{:?}", candidate);
-            println!("{}", candidate.x * 4000000 + candidate.y);
-        }
+        println!("{:?}", candidate);
+        println!("{}", candidate.x * 4000000 + candidate.y);
     }
 
 }
