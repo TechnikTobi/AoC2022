@@ -1,8 +1,12 @@
 name: Update README ⭐
 on:
-  schedule:
-    - cron: "51 */4 * * *"  # Every 4 hours
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
+#  schedule:
+#    - cron: "51 */4 * * *"  # Every 4 hours
 
 jobs:
   update-readme:
