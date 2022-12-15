@@ -95,7 +95,7 @@ fn main()
 
     let part_1_y = 2000000;
     let part_2_min = 0;
-    let part_2_max = 0;
+    let part_2_max = 4000000;
     // let part_1_y = 10;
     
     // Preprocessing
@@ -140,105 +140,42 @@ fn main()
     let mut part_1_closest_beacon = closest_beacon.clone();
     let mut part_2_closest_beacon = closest_beacon.clone();
 
-
-	// {
-	// 	for x in min_position.x..max_position.x+1
-	// 	{
-	// 		let position = Position {x: x, y: y};
-    //         match part_1_map[&position]
-    //         {
-    //             Field::Beacon => print!("B"),
-    //             Field::Sensor => print!("S"),
-    //             Field::Unknown => print!("."),
-    //             Field::NoBeacon => print!("#"),
-    //         };
-	// 	}
-    //     print!("\n");
-	// }
-
-    println!("Checking 1...");
-    for (sensor, beacon) in part_1_closest_beacon
-    {
-        let distance = manhatten_distance(&sensor, &beacon);
-        println!("{:?}, {}", sensor, distance);
-
-        // if !(sensor.y + distance > part_1_y && sensor.y - distance < part_1_y)
-        // {
-        //     continue;
-        // }
-
-        // for y in std::cmp::min(part_1_y, sensor.y-distance-1)..std::cmp::max(part_1_y, sensor.y+distance+1)
-        // {
-            for x in (sensor.x-distance-2)..(sensor.x+distance+2)
-            {
-                let position = Position {x: x, y: part_1_y};
-                if manhatten_distance(&sensor, &position) <= distance
-                {
-                    if !map.contains_key(&position)
-                    {
-                        part_1_map.insert(position, Field::NoBeacon);
-                    }
-                }
-            }
-        // }
-
-        // for position in map.keys()
-        // {
-        //     if manhatten_distance(&sensor, position) <= distance
-        //     {
-        //         if part_1_map[&position] == Field::Unknown
-        //         {
-        //             part_1_map.insert(position.clone(), Field::NoBeacon);
-        //         }
-        //     }
-        // }
-    }
-
-    // for y in min_position.y..max_position.y+1
-	// {
-	// 	for x in min_position.x..max_position.x+1
-	// 	{
-	// 		let position = Position {x: x, y: y};
-    //         match part_1_map[&position]
-    //         {
-    //             Field::Beacon => print!("B"),
-    //             Field::Sensor => print!("S"),
-    //             Field::Unknown => print!("."),
-    //             Field::NoBeacon => print!("#"),
-    //         };
-	// 	}
-    //     print!("\n");
-	// }
-
-    let mut part_1_sum = 0;
-
-    for x in min_x..max_x+1
-    {
-        let position = Position{x: x, y: part_1_y};
-        if !part_1_map.contains_key(&position)
-        {
-            continue;
-        }
-        let value = part_1_map[&position];
-        if value != Field::Unknown && value != Field::Beacon && value != Field::Sensor
-        {
-            part_1_sum += 1;
-        }
-    }
-
-    // for (position, value) in part_1_map
+    // println!("Checking 1...");
+    // for (sensor, beacon) in part_1_closest_beacon
     // {
-    //     if position.y != part_1_y
+    //     let distance = manhatten_distance(&sensor, &beacon);
+    //     println!("{:?}, {}", sensor, distance);
+
+    //     for x in (sensor.x-distance-2)..(sensor.x+distance+2)
+    //     {
+    //         let position = Position {x: x, y: part_1_y};
+    //         if manhatten_distance(&sensor, &position) <= distance
+    //         {
+    //             if !map.contains_key(&position)
+    //             {
+    //                 part_1_map.insert(position, Field::NoBeacon);
+    //             }
+    //         }
+    //     }
+    // }
+
+    // let mut part_1_sum = 0;
+
+    // for x in min_x..max_x+1
+    // {
+    //     let position = Position{x: x, y: part_1_y};
+    //     if !part_1_map.contains_key(&position)
     //     {
     //         continue;
     //     }
-    //     if value != Field::Unknown && value != Field::Beacon
+    //     let value = part_1_map[&position];
+    //     if value != Field::Unknown && value != Field::Beacon && value != Field::Sensor
     //     {
     //         part_1_sum += 1;
     //     }
     // }
 
-    println!("{}", part_1_sum);
+    // println!("{}", part_1_sum);
 
 
 
@@ -250,37 +187,107 @@ fn main()
 
 
     println!("Checking 2...");
-    for (sensor, beacon) in part_2_closest_beacon
+
+    let mut candidates = HashMap::new();
+
+    for (sensor, beacon) in &part_2_closest_beacon
     {
         let distance = manhatten_distance(&sensor, &beacon);
         println!("{:?}, {}", sensor, distance);
 
-        for y in std::cmp::max(part_2_min, sensor.y-distance-1)..std::cmp::min(part_2_max, sensor.y+distance+1)
+        for i in 0..distance+2
         {
-            for x in std::cmp::max(part_2_min, sensor.x-distance-1)..std::cmp::min(part_2_max, sensor.x+distance+1)
+            let mut new_position_1 = sensor.clone();
+            let mut new_position_2 = sensor.clone();
+            new_position_1.x += i;
+            new_position_2.x += i;
+            new_position_1.y += (distance+1 - i);
+            new_position_2.y -= (distance+1 - i);
+            if 
+                !(new_position_1.x < part_2_min || new_position_1.x > part_2_max) &&
+                !(new_position_1.y < part_2_min || new_position_1.y > part_2_max)
             {
-                let position = Position {x: x, y: y};
-                if manhatten_distance(&sensor, &position) <= distance
+                candidates.insert(new_position_1, Field::Unknown);
+            }
+            if 
+                !(new_position_2.x < part_2_min || new_position_2.x > part_2_max) &&
+                !(new_position_2.y < part_2_min || new_position_2.y > part_2_max)
+            {
+                candidates.insert(new_position_2, Field::Unknown);
+            }
+        }
+
+        for i in 0..distance+2
+        {
+            let mut new_position_1 = sensor.clone();
+            let mut new_position_2 = sensor.clone();
+            new_position_1.x -= i;
+            new_position_2.x -= i;
+            new_position_1.y += (distance+1 - i);
+            new_position_2.y -= (distance+1 - i);
+            if 
+                !(new_position_1.x < part_2_min || new_position_1.x > part_2_max) &&
+                !(new_position_1.y < part_2_min || new_position_1.y > part_2_max)
+            {
+                candidates.insert(new_position_1, Field::Unknown);
+            }
+            if 
+                !(new_position_2.x < part_2_min || new_position_2.x > part_2_max) &&
+                !(new_position_2.y < part_2_min || new_position_2.y > part_2_max)
+            {
+                candidates.insert(new_position_2, Field::Unknown);
+            }
+        }
+
+        // for y in std::cmp::max(part_2_min, sensor.y-distance-1)..std::cmp::min(part_2_max, sensor.y+distance+1)
+        // {
+        //     for x in std::cmp::max(part_2_min, sensor.x-distance-1)..std::cmp::min(part_2_max, sensor.x+distance+1)
+        //     {
+        //         let position = Position {x: x, y: y};
+        //         if manhatten_distance(&sensor, &position) == distance+1
+        //         {
+        //             candidates.insert(position, Field::NoBeacon);
+        //         }
+        //     }
+        // }
+    }
+
+    // for x in part_2_min..part_2_max+1
+    // {
+    //     for y in part_2_min..part_2_max+1
+    //     {
+    //         let position = Position{x: x, y: y};
+    //         if candidates[&position] == Field::Unknown
+    //         {
+    //             println!("{:?}", position);
+    //             break;
+    //         }
+    //     }
+    // }
+
+    let candidates_keys = candidates.keys().map(|x| x.clone()).collect::<Vec<Position>>();
+    for (sensor, beacon) in &part_2_closest_beacon
+    {
+        for candidate in &candidates_keys
+        {
+            if candidates[&candidate] == Field::Unknown
+            {
+                let distance = manhatten_distance(sensor, beacon);
+                let candidate_distance = manhatten_distance(sensor, candidate);
+                if candidate_distance <= distance
                 {
-                    if !map.contains_key(&position)
-                    {
-                        part_2_map.insert(position, Field::NoBeacon);
-                    }
+                    candidates.insert(candidate.clone(), Field::NoBeacon);
                 }
             }
         }
     }
 
-    for x in part_2_min..part_2_max+1
+    for (candidate, field) in &candidates
     {
-        for y in part_2_min..part_2_max+1
+        if *field == Field::Unknown
         {
-            let position = Position{x: x, y: y};
-            if !part_2_map.contains_key(&position)
-            {
-                println!("{:?}", position);
-                break;
-            }
+            println!("{:?}", candidate);
+            println!("{}", candidate.x * 4000000 + candidate.y);
         }
     }
 
