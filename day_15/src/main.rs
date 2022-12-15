@@ -103,6 +103,7 @@ fn main()
 		closest_beacon.insert(sensor.clone(), beacon.clone());
 	}
 
+	// Compute the min/max values of the grid
 	let mut min_x = i64::MAX;
 	let mut min_y = i64::MAX;
 	let mut max_x = i64::MIN;
@@ -120,8 +121,12 @@ fn main()
 
 
 	// Part 1
+	
+	// We only need to look at one row
 	let mut y_row = (min_x..max_x+1).map(|_| Field::Unknown).collect::<Vec<Field>>();
 
+	// For every sensor, compute the part of the row that overlaps with the 
+	// sensor's manhatten circle
 	for (sensor, beacon) in &closest_beacon
 	{
 		let distance = manhatten_distance(&sensor, &beacon);
@@ -132,6 +137,8 @@ fn main()
 		let row_start = sensor.x - one_sided_range + offset;
 		let row_end = sensor.x + one_sided_range + offset;
 
+		// For all these fields in the row, we know that no beacon can be there
+		// due to the overlap with the sensor's manhatten circle
 		(row_start..row_end).for_each(|x| y_row[x as usize] = Field::NoBeacon);
 	}
 
@@ -140,14 +147,20 @@ fn main()
 
 
 	// Part 2
+
+	// The set of all candidate positions where the beacon in question might be located
 	let mut candidates = HashSet::new();
 
+	// For every sensor, add the border of its radius as candidates
 	for (sensor, beacon) in &closest_beacon
 	{
 		let distance = manhatten_distance(&sensor, &beacon);
 
+		// While doing that, remove previously added candidates that are within 
+		// the radius of the current sensor
 		candidates.retain(|candidate| manhatten_distance(sensor, candidate) > distance);
 
+		// Add manhatten circle to the candidates
 		for i in 0..distance+2
 		{
 			let mut new_position_1 = sensor.clone();
@@ -165,7 +178,7 @@ fn main()
 			new_position_3.y += distance+1 - i;
 			new_position_4.y -= distance+1 - i;
 
-
+			// Note that the x coordinates of some of the new positions are identical
 			if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
 			{
 				if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
@@ -192,12 +205,14 @@ fn main()
 		}
 	}
 
+	// Cleanup all candidates one final time
 	for (sensor, beacon) in &closest_beacon
 	{
 		let distance = manhatten_distance(sensor, beacon);
 		candidates.retain(|candidate| manhatten_distance(sensor, candidate) > distance);
 	}
 
+	// Compute tuning frequency of beacon that is in distress
 	assert_eq!(candidates.len(), 1);
 	for candidate in &candidates
 	{
