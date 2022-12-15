@@ -132,16 +132,11 @@ fn main()
         max_y = std::cmp::max(max_y, sensor.y+distance);
     }
 
-    let min_position = Position {x: min_x, y: min_y};
-	let max_position = Position {x: max_x, y: max_y};
-
-    let mut part_1_map = map.clone();
-
     let part_1_closest_beacon = closest_beacon.clone();
     let part_2_closest_beacon = closest_beacon.clone();
 
     // println!("Checking 1...");
-    // for (sensor, beacon) in part_1_closest_beacon
+    // for (sensor, beacon) in &part_1_closest_beacon
     // {
     //     let distance = manhatten_distance(&sensor, &beacon);
     //     println!("{:?}, {}", sensor, distance);
@@ -179,79 +174,104 @@ fn main()
 
 
 
+    println!("New Checking 1...");
+    let mut y_row = Vec::new();
+    for x in min_x..max_x+1
+    {
+        y_row.push(Field::Unknown);
+    }
 
-
-
-
-
-
-
-    println!("Checking 2...");
-
-    let mut candidates = HashSet::new();
-
-    for (sensor, beacon) in &part_2_closest_beacon
+    for (sensor, beacon) in &part_1_closest_beacon
     {
         let distance = manhatten_distance(&sensor, &beacon);
-        println!("{:?}, {}", sensor, distance);
+        let distance_to_row = (sensor.y - part_1_y).abs();
+        println!("{:?}, {}, {}", sensor, distance, distance_to_row);
 
-        candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
-
-        for i in 0..distance+2
+        for x in (sensor.x - std::cmp::max(0,distance - distance_to_row))..(sensor.x + std::cmp::max(0, distance - distance_to_row))
         {
-            let mut new_position_1 = sensor.clone();
-            let mut new_position_2 = sensor.clone();
-            let mut new_position_3 = sensor.clone();
-            let mut new_position_4 = sensor.clone();
-            
-            new_position_1.x += i;
-            new_position_2.x += i;
-            new_position_3.x -= i;
-            new_position_4.x -= i;
-
-            new_position_1.y += (distance+1 - i);
-            new_position_2.y -= (distance+1 - i);
-            new_position_3.y += (distance+1 - i);
-            new_position_4.y -= (distance+1 - i);
-
-
-            if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
-            {
-                if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
-                {
-                    candidates.insert(new_position_1);
-                }
-                if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
-                {
-                    candidates.insert(new_position_2);
-                }
-            }
-
-            if new_position_3.x >= part_2_min && new_position_3.x <= part_2_max
-            {
-                if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
-                {
-                    candidates.insert(new_position_3);
-                }
-                if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
-                {
-                    candidates.insert(new_position_4);
-                }
-            }
+            y_row[(x+min_x.abs()) as usize] = Field::NoBeacon;
         }
     }
 
-    for (sensor, beacon) in &part_2_closest_beacon
-    {
-        let distance = manhatten_distance(sensor, beacon);
-        candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
-    }
+    println!("{}", y_row.iter().filter(|&field| *field == Field::NoBeacon).count());
 
-    println!("Candidates:");
-    for candidate in &candidates
-    {
-        println!("{:?}", candidate);
-        println!("{}", candidate.x * 4000000 + candidate.y);
-    }
+
+
+
+
+
+
+
+
+
+
+
+    // println!("Checking 2...");
+
+    // let mut candidates = HashSet::new();
+
+    // for (sensor, beacon) in &part_2_closest_beacon
+    // {
+    //     let distance = manhatten_distance(&sensor, &beacon);
+    //     println!("{:?}, {}", sensor, distance);
+
+    //     candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
+
+    //     for i in 0..distance+2
+    //     {
+    //         let mut new_position_1 = sensor.clone();
+    //         let mut new_position_2 = sensor.clone();
+    //         let mut new_position_3 = sensor.clone();
+    //         let mut new_position_4 = sensor.clone();
+            
+    //         new_position_1.x += i;
+    //         new_position_2.x += i;
+    //         new_position_3.x -= i;
+    //         new_position_4.x -= i;
+
+    //         new_position_1.y += (distance+1 - i);
+    //         new_position_2.y -= (distance+1 - i);
+    //         new_position_3.y += (distance+1 - i);
+    //         new_position_4.y -= (distance+1 - i);
+
+
+    //         if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
+    //         {
+    //             if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
+    //             {
+    //                 candidates.insert(new_position_1);
+    //             }
+    //             if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
+    //             {
+    //                 candidates.insert(new_position_2);
+    //             }
+    //         }
+
+    //         if new_position_3.x >= part_2_min && new_position_3.x <= part_2_max
+    //         {
+    //             if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
+    //             {
+    //                 candidates.insert(new_position_3);
+    //             }
+    //             if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
+    //             {
+    //                 candidates.insert(new_position_4);
+    //             }
+    //         }
+    //     }
+    // }
+
+    // for (sensor, beacon) in &part_2_closest_beacon
+    // {
+    //     let distance = manhatten_distance(sensor, beacon);
+    //     candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
+    // }
+
+    // println!("Candidates:");
+    // for candidate in &candidates
+    // {
+    //     println!("{:?}", candidate);
+    //     println!("{}", candidate.x * 4000000 + candidate.y);
+    // }
 
 }
