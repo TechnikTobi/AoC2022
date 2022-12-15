@@ -36,8 +36,6 @@ Position
 enum
 Field
 {
-	Sensor,
-	Beacon,
 	NoBeacon,
 	Unknown
 }
@@ -90,38 +88,25 @@ fn main()
 {
 
     let lines = read_string_data(
-		// std::path::Path::new("./data/example.txt"),
         std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
     let part_1_y = 2000000;
     let part_2_min = 0;
     let part_2_max = 4000000;
-    // let part_1_y = 10;
     
     // Preprocessing
     let mut closest_beacon = HashMap::new();
-    let mut map = HashMap::new();
     for line in &lines
     {
         let (sensor, beacon) = parse_string(line);
         closest_beacon.insert(sensor.clone(), beacon.clone());
-        map.insert(sensor, Field::Sensor);
-        map.insert(beacon, Field::Beacon);
     }
 
     let mut min_x = i64::MAX;
     let mut min_y = i64::MAX;
     let mut max_x = i64::MIN;
     let mut max_y = i64::MIN;
-
-    for position in map.keys()
-	{
-		min_x = std::cmp::min(min_x, position.x);
-		min_y = std::cmp::min(min_y, position.y);
-		max_x = std::cmp::max(max_x, position.x);
-		max_y = std::cmp::max(max_y, position.y);
-	}
 
     for (sensor, beacon) in &closest_beacon
     {
@@ -132,146 +117,91 @@ fn main()
         max_y = std::cmp::max(max_y, sensor.y+distance);
     }
 
-    let part_1_closest_beacon = closest_beacon.clone();
-    let part_2_closest_beacon = closest_beacon.clone();
-
-    // println!("Checking 1...");
-    // for (sensor, beacon) in &part_1_closest_beacon
-    // {
-    //     let distance = manhatten_distance(&sensor, &beacon);
-    //     println!("{:?}, {}", sensor, distance);
-
-    //     for x in (sensor.x-distance-2)..(sensor.x+distance+2)
-    //     {
-    //         let position = Position {x: x, y: part_1_y};
-    //         if manhatten_distance(&sensor, &position) <= distance
-    //         {
-    //             if !map.contains_key(&position)
-    //             {
-    //                 part_1_map.insert(position, Field::NoBeacon);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // let mut part_1_sum = 0;
-
-    // for x in min_x..max_x+1
-    // {
-    //     let position = Position{x: x, y: part_1_y};
-    //     if !part_1_map.contains_key(&position)
-    //     {
-    //         continue;
-    //     }
-    //     let value = part_1_map[&position];
-    //     if value != Field::Unknown && value != Field::Beacon && value != Field::Sensor
-    //     {
-    //         part_1_sum += 1;
-    //     }
-    // }
-
-    // println!("{}", part_1_sum);
 
 
+    // Part 1
+    let mut y_row = (min_x..max_x+1).map(|_| Field::Unknown).collect::<Vec<Field>>();
 
-    println!("New Checking 1...");
-    let mut y_row = Vec::new();
-    for x in min_x..max_x+1
-    {
-        y_row.push(Field::Unknown);
-    }
-
-    for (sensor, beacon) in &part_1_closest_beacon
+    for (sensor, beacon) in &closest_beacon
     {
         let distance = manhatten_distance(&sensor, &beacon);
         let distance_to_row = (sensor.y - part_1_y).abs();
-        println!("{:?}, {}, {}", sensor, distance, distance_to_row);
 
-        for x in (sensor.x - std::cmp::max(0,distance - distance_to_row))..(sensor.x + std::cmp::max(0, distance - distance_to_row))
+        let one_sided_range = std::cmp::max(0,distance - distance_to_row);
+        let offset = min_x.abs();
+        let row_start = sensor.x - one_sided_range + offset;
+        let row_end = sensor.x + one_sided_range + offset;
+
+        (row_start..row_end).for_each(|x| y_row[x as usize] = Field::NoBeacon);
+    }
+
+    println!("Part 1: {}", y_row.iter().filter(|&field| *field == Field::NoBeacon).count());
+
+
+
+    // Part 2
+    let mut candidates = HashSet::new();
+
+    for (sensor, beacon) in &closest_beacon
+    {
+        let distance = manhatten_distance(&sensor, &beacon);
+
+        candidates.retain(|candidate| manhatten_distance(sensor, candidate) > distance);
+
+        for i in 0..distance+2
         {
-            y_row[(x+min_x.abs()) as usize] = Field::NoBeacon;
+            let mut new_position_1 = sensor.clone();
+            let mut new_position_2 = sensor.clone();
+            let mut new_position_3 = sensor.clone();
+            let mut new_position_4 = sensor.clone();
+            
+            new_position_1.x += i;
+            new_position_2.x += i;
+            new_position_3.x -= i;
+            new_position_4.x -= i;
+
+            new_position_1.y += distance+1 - i;
+            new_position_2.y -= distance+1 - i;
+            new_position_3.y += distance+1 - i;
+            new_position_4.y -= distance+1 - i;
+
+
+            if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
+            {
+                if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
+                {
+                    candidates.insert(new_position_1);
+                }
+                if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
+                {
+                    candidates.insert(new_position_2);
+                }
+            }
+
+            if new_position_3.x >= part_2_min && new_position_3.x <= part_2_max
+            {
+                if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
+                {
+                    candidates.insert(new_position_3);
+                }
+                if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
+                {
+                    candidates.insert(new_position_4);
+                }
+            }
         }
     }
 
-    println!("{}", y_row.iter().filter(|&field| *field == Field::NoBeacon).count());
+    for (sensor, beacon) in &closest_beacon
+    {
+        let distance = manhatten_distance(sensor, beacon);
+        candidates.retain(|candidate| manhatten_distance(sensor, candidate) > distance);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-    // println!("Checking 2...");
-
-    // let mut candidates = HashSet::new();
-
-    // for (sensor, beacon) in &part_2_closest_beacon
-    // {
-    //     let distance = manhatten_distance(&sensor, &beacon);
-    //     println!("{:?}, {}", sensor, distance);
-
-    //     candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
-
-    //     for i in 0..distance+2
-    //     {
-    //         let mut new_position_1 = sensor.clone();
-    //         let mut new_position_2 = sensor.clone();
-    //         let mut new_position_3 = sensor.clone();
-    //         let mut new_position_4 = sensor.clone();
-            
-    //         new_position_1.x += i;
-    //         new_position_2.x += i;
-    //         new_position_3.x -= i;
-    //         new_position_4.x -= i;
-
-    //         new_position_1.y += (distance+1 - i);
-    //         new_position_2.y -= (distance+1 - i);
-    //         new_position_3.y += (distance+1 - i);
-    //         new_position_4.y -= (distance+1 - i);
-
-
-    //         if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
-    //         {
-    //             if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
-    //             {
-    //                 candidates.insert(new_position_1);
-    //             }
-    //             if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
-    //             {
-    //                 candidates.insert(new_position_2);
-    //             }
-    //         }
-
-    //         if new_position_3.x >= part_2_min && new_position_3.x <= part_2_max
-    //         {
-    //             if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
-    //             {
-    //                 candidates.insert(new_position_3);
-    //             }
-    //             if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
-    //             {
-    //                 candidates.insert(new_position_4);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // for (sensor, beacon) in &part_2_closest_beacon
-    // {
-    //     let distance = manhatten_distance(sensor, beacon);
-    //     candidates.retain(|candidate| manhatten_distance(sensor, candidate) <= distance);
-    // }
-
-    // println!("Candidates:");
-    // for candidate in &candidates
-    // {
-    //     println!("{:?}", candidate);
-    //     println!("{}", candidate.x * 4000000 + candidate.y);
-    // }
+    assert_eq!(candidates.len(), 1);
+    for candidate in &candidates
+    {
+        println!("Part 2: {}", candidate.x * 4000000 + candidate.y);
+    }
 
 }
