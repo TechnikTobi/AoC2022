@@ -131,14 +131,13 @@ fn main()
         max_y = std::cmp::max(max_y, sensor.y+distance);
     }
 
-    let mut min_position = Position {x: min_x, y: min_y};
-	let mut max_position = Position {x: max_x, y: max_y};
+    let min_position = Position {x: min_x, y: min_y};
+	let max_position = Position {x: max_x, y: max_y};
 
     let mut part_1_map = map.clone();
-    let mut part_2_map = map.clone();
 
-    let mut part_1_closest_beacon = closest_beacon.clone();
-    let mut part_2_closest_beacon = closest_beacon.clone();
+    let part_1_closest_beacon = closest_beacon.clone();
+    let part_2_closest_beacon = closest_beacon.clone();
 
     // println!("Checking 1...");
     // for (sensor, beacon) in part_1_closest_beacon
@@ -199,71 +198,45 @@ fn main()
         {
             let mut new_position_1 = sensor.clone();
             let mut new_position_2 = sensor.clone();
+            let mut new_position_3 = sensor.clone();
+            let mut new_position_4 = sensor.clone();
+            
             new_position_1.x += i;
             new_position_2.x += i;
+            new_position_3.x -= i;
+            new_position_4.x -= i;
+
             new_position_1.y += (distance+1 - i);
             new_position_2.y -= (distance+1 - i);
-            if 
-                !(new_position_1.x < part_2_min || new_position_1.x > part_2_max) &&
-                !(new_position_1.y < part_2_min || new_position_1.y > part_2_max)
+            new_position_3.y += (distance+1 - i);
+            new_position_4.y -= (distance+1 - i);
+
+
+            if new_position_1.x >= part_2_min && new_position_1.x <= part_2_max
             {
-                candidates.insert(new_position_1, Field::Unknown);
+                if new_position_1.y >= part_2_min && new_position_1.y <= part_2_max
+                {
+                    candidates.insert(new_position_1, Field::Unknown);
+                }
+                if new_position_2.y >= part_2_min && new_position_2.y <= part_2_max
+                {
+                    candidates.insert(new_position_2, Field::Unknown);
+                }
             }
-            if 
-                !(new_position_2.x < part_2_min || new_position_2.x > part_2_max) &&
-                !(new_position_2.y < part_2_min || new_position_2.y > part_2_max)
+
+            if new_position_3.x >= part_2_min && new_position_3.x <= part_2_max
             {
-                candidates.insert(new_position_2, Field::Unknown);
+                if new_position_3.y >= part_2_min && new_position_3.y <= part_2_max
+                {
+                    candidates.insert(new_position_3, Field::Unknown);
+                }
+                if new_position_4.y >= part_2_min && new_position_4.y <= part_2_max
+                {
+                    candidates.insert(new_position_4, Field::Unknown);
+                }
             }
         }
-
-        for i in 0..distance+2
-        {
-            let mut new_position_1 = sensor.clone();
-            let mut new_position_2 = sensor.clone();
-            new_position_1.x -= i;
-            new_position_2.x -= i;
-            new_position_1.y += (distance+1 - i);
-            new_position_2.y -= (distance+1 - i);
-            if 
-                !(new_position_1.x < part_2_min || new_position_1.x > part_2_max) &&
-                !(new_position_1.y < part_2_min || new_position_1.y > part_2_max)
-            {
-                candidates.insert(new_position_1, Field::Unknown);
-            }
-            if 
-                !(new_position_2.x < part_2_min || new_position_2.x > part_2_max) &&
-                !(new_position_2.y < part_2_min || new_position_2.y > part_2_max)
-            {
-                candidates.insert(new_position_2, Field::Unknown);
-            }
-        }
-
-        // for y in std::cmp::max(part_2_min, sensor.y-distance-1)..std::cmp::min(part_2_max, sensor.y+distance+1)
-        // {
-        //     for x in std::cmp::max(part_2_min, sensor.x-distance-1)..std::cmp::min(part_2_max, sensor.x+distance+1)
-        //     {
-        //         let position = Position {x: x, y: y};
-        //         if manhatten_distance(&sensor, &position) == distance+1
-        //         {
-        //             candidates.insert(position, Field::NoBeacon);
-        //         }
-        //     }
-        // }
     }
-
-    // for x in part_2_min..part_2_max+1
-    // {
-    //     for y in part_2_min..part_2_max+1
-    //     {
-    //         let position = Position{x: x, y: y};
-    //         if candidates[&position] == Field::Unknown
-    //         {
-    //             println!("{:?}", position);
-    //             break;
-    //         }
-    //     }
-    // }
 
     let candidates_keys = candidates.keys().map(|x| x.clone()).collect::<Vec<Position>>();
     for (sensor, beacon) in &part_2_closest_beacon
@@ -276,7 +249,7 @@ fn main()
                 let candidate_distance = manhatten_distance(sensor, candidate);
                 if candidate_distance <= distance
                 {
-                    candidates.insert(candidate.clone(), Field::NoBeacon);
+                    candidates.remove(candidate);
                 }
             }
         }
