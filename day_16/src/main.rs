@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-use std::collections::VecDeque;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 pub fn read_string_data
 (
@@ -37,166 +35,6 @@ parse_string
 	let tunnels = if tunnels_raw.chars().nth(0) == Some('s') { &tunnels_raw[2..] } else { &tunnels_raw[1..] };
 	let tunnels_vec = tunnels.split(", ").map(|x| x.to_string()).collect::<Vec<String>>();
 	return (valve_name.clone(), valve_flow.clone(), tunnels_vec);
-}
-
-
-fn
-dijkstra
-(
-	start: &String,
-	on_off_original: &HashMap<String, bool>,
-	flows_original: &HashMap<String, i64>,
-	leads_to_original: &HashMap<String, Vec<String>>,
-	remaining_time: i64
-)
--> (String, i64, i64)
-{
-	let mut on_off = on_off_original.clone();
-	let mut flows = flows_original.clone();
-	let mut leads_to = leads_to_original.clone();
-
-	let mut positions = on_off.keys().map(|x| x.clone()).collect::<VecDeque<String>>();
-	let destinations = positions.clone();
-	let mut predecessor = HashMap::new();
-	let mut distance = HashMap::new();
-
-	for position in &positions
-	{
-		distance.insert(
-			position.clone(),
-			if position == start { 0i64 } else { i64::MAX }
-		);		
-	}
-
-	while !positions.is_empty()
-	{
-		let mut positions_vec = Vec::from_iter(positions);
-		positions_vec.sort_by(|a,b| distance[a].cmp(&distance[b]));
-		positions = VecDeque::from_iter(positions_vec);
-		let u = positions.pop_front().unwrap();
-
-		for position in &mut positions
-		{
-			if leads_to[&u.clone()].contains(position)
-			{
-				let alternative = distance[&u] + 1;
-				if alternative < distance[&position.clone()]
-				{
-					distance.insert(position.clone(), alternative);
-					predecessor.insert(position.clone(), u.clone());
-				}
-			}
-		}
-	}
-
-	let mut next_destination = start.clone();
-	let mut next_destination_value = 0;
-	let mut next_destination_cost = 0;
-
-	println!("Analysis start:");
-	for destination in &destinations
-	{
-		if on_off[&destination.clone()]
-		{
-			continue;
-		}
-
-		let flow = flows[&destination.clone()];
-		if flow == 0
-		{
-			continue;
-		}
-
-		let mut path = VecDeque::new();
-		path.push_front(destination.clone());
-		let mut u = destination.clone();
-
-		if !predecessor.contains_key(&u)
-		{
-			continue;
-		}
-		while !(&predecessor[&u] == start)
-		{
-			u = predecessor[&u].clone();
-			path.push_front(u.clone());
-		}
-
-		let destination_cost = path.len() as i64;
-		let destination_value = (remaining_time - destination_cost) * flow;
-
-		// println!("Destination: {}", destination);
-		// println!("Factor: {}", remaining_time - destination_cost);
-		// println!("Flow: {}", flow);
-		// println!("Value: {}", destination_value);
-		// println!("\n");
-
-
-		if destination_value > next_destination_value
-		{
-			next_destination = destination.clone();
-			next_destination_value = destination_value;
-			next_destination_cost = destination_cost+1;
-		}
-	}
-
-	return (next_destination, next_destination_value, next_destination_cost);	
-}
-
-fn
-recursive_visit
-(
-	start: &String,
-	leads_to: &HashMap<String, Vec<String>>,
-	flows: &HashMap<String, i64>,
-	on_off_orig: &HashMap<String, bool>,
-	remaining_time: i64,
-	so_far: &String,
-	remaining: usize
-)
--> i64
-{
-
-	let mut best_result = 0;
-
-	if remaining_time > 0 && remaining > 0
-	{
-		// Only perform this branch if this valve is closed
-		// Also only makes sense if opening this valve actually does something
-		let this_flow = flows[&start.clone()];
-		if on_off_orig[&start.clone()] == false && this_flow > 0
-		{
-			let mut on_off_this_on = on_off_orig.clone();
-			on_off_this_on.insert(start.clone(), true);
-			for neighbour in &leads_to[&start.clone()]
-			{
-				// println!("?{}{}", so_far, neighbour);
-				let result = recursive_visit(neighbour, leads_to, flows, &on_off_this_on, remaining_time-2, &format!("{}{}", so_far, neighbour), remaining-1);
-				best_result = std::cmp::max(best_result, result + this_flow*remaining_time);
-			}
-
-		}
-
-
-		let on_off_this_off = on_off_orig;
-		for neighbour in &leads_to[&start.clone()]
-		{
-			if so_far[..so_far.len()-2].ends_with(neighbour)
-			{
-				continue;
-			}
-			// println!("!{}{}", so_far, neighbour);
-			let result = recursive_visit(neighbour, leads_to, flows, &on_off_this_off, remaining_time-1, &format!("{}{}", so_far, neighbour), remaining);
-			best_result = std::cmp::max(best_result, result);
-		}
-	}
-	else
-	{
-		// panic!("AH");
-	}
-
-	// println!("{}", best_result);
-		
-	return best_result;
 }
 
 fn
@@ -325,53 +163,11 @@ fn main()
 
 	// Part 1
 	// Example: 20*28 + 13*25 + 21*21 + 22*13 + 3*9 + 2*6
-	// let max_time = 30;
-	// let mut current = "AA".to_string();
-	// // let mut destination = String::new();
-	// let mut minute = 1;
-	// let mut part_1_result = 0;
-	// let mut pressure_sum = 0;
-
-	// while minute < max_time
-	// {
-	// 	let (destination, value, cost) = dijkstra(
-	// 		&current, 
-	// 		&on_off, 
-	// 		&flows, 
-	// 		&leads_to, 
-	// 		(max_time-minute)
-	// 	);
-
-	// 	println!("Current: {}", current);
-	// 	println!("Minutes so far: {}", minute);
-	// 	println!("Pressure sum: {}", pressure_sum);
-	// 	println!("Destination: {}", destination);
-	// 	println!("\n");
-
-	// 	if current == destination
-	// 	{
-	// 		break;
-	// 	}
-
-	// 	pressure_sum += flows[&destination.clone()];
-	// 	current = destination;
-	// 	part_1_result += value;
-	// 	minute += cost;
-	// 	on_off.insert(current.clone(), true);
-
-	// }
-
 	let start = String::from("AA");
-	let remaining = flows.iter().filter(|(_, &value)| value > 0).count();
-	let distances = floyd_warshall(&leads_to);
-	// let part_1_result = recursive_visit(&start, &leads_to, &flows, &on_off, 29, &start, remaining);
-	
+	let distances = floyd_warshall(&leads_to);	
 	let part_1_result = recursive_visit_v2(&start, &leads_to, &flows, &distances, &on_off, 30, &String::new());
 
-
 	println!("Part 1: {}", part_1_result);
-
-
 
 
 }
