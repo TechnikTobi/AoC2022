@@ -86,6 +86,43 @@ floyd_warshall
 }
 
 
+#[memoize]
+fn 
+part_1
+(
+	start: String,
+	interesting_valves_orig: Vec<String>,
+	flows: Vec<(String, i64)>,
+	distances: Vec<(String, String, i64)>,
+	remaining_time: i64,
+)
+-> i64
+{
+	let mut best_result = 0;
+
+	for valve in &interesting_valves_orig
+	{
+		// We know about the valve at this point: It has positive flow & is closed
+		// let distance = distances[&(start.clone(), valve.clone())];
+		let distance = distances.iter().filter(|(a, b, _)| *a == start && b == valve).map(|(_ , _, distance)| distance).next().unwrap();
+
+		// Check if visiting that valve is even possible
+		if distance > &(remaining_time+1)
+		{
+			continue;
+		}
+
+		// let flow = flows[&valve.clone()];
+		let flow = flows.iter().filter(|(a, _)| a == valve).map(|(_, flow)| flow).next().unwrap();
+		let interesting_valves = interesting_valves_orig.iter().filter(|&x| x != valve).map(|x| x.to_owned()).collect::<Vec<String>>();
+
+		let result = part_1(valve.clone(), interesting_valves.clone(), flows.clone(), distances.clone(), remaining_time-distance-1);
+		best_result = std::cmp::max(best_result, result + (remaining_time-distance-1)*flow);
+	}
+
+	return best_result;
+}
+
 
 fn 
 recursive_visit_v2
@@ -98,10 +135,7 @@ recursive_visit_v2
 )
 -> i64
 {
-	// println!("{}", so_far);
-
 	let mut best_result = 0;
-	// let mut best_result_string = so_far.clone();
 
 	for valve in interesting_valves_orig
 	{
@@ -120,6 +154,53 @@ recursive_visit_v2
 		let result = recursive_visit_v2(valve, &interesting_valves, flows, distances, remaining_time-distance-1);
 		best_result = std::cmp::max(best_result, result + (remaining_time-distance-1)*flow);
 	}
+
+	return best_result;
+}
+
+fn
+part_2
+(
+	start: &String,
+	interesting_valves_orig: &Vec<String>,
+	flows: &HashMap<String, i64>,
+	distances: &HashMap<(String, String), i64>,
+	remaining_time: i64,
+	mother_call: bool,
+)
+-> i64
+{
+	let mut best_result = 0;
+
+	for valve in interesting_valves_orig
+	{
+
+		if mother_call
+		{
+			println!("{}", valve);
+		}
+
+		// We know about the valve at this point: It has positive flow & is closed
+		let distance = distances[&(start.clone(), valve.clone())];
+
+		let flow = flows[&valve.clone()];
+		let interesting_valves = interesting_valves_orig.iter().filter(|x| *x != valve).map(|x| x.clone()).collect::<Vec<String>>();
+
+		// Check if visiting that valve is even possible
+		if distance > remaining_time+1
+		{
+			continue;
+		}
+
+		let result = part_2(valve, &interesting_valves, flows, distances, remaining_time-distance-1, false);
+		best_result = std::cmp::max(best_result, result + (remaining_time-distance-1)*flow);
+	}
+
+	let other_result = recursive_visit_v2(&String::from("AA"), interesting_valves_orig, flows, distances, 26);
+	// let flows_new = flows.iter().map(|(key, value)| (key.clone(), value.clone()) ).collect::<Vec<(String, i64)>>();
+	// let distances_new = distances.iter().map(|((key1, key2), value)| (key1.clone(), key2.clone(), value.clone()) ).collect::<Vec<(String, String, i64)>>();
+	// let other_result = part_1(String::from("AA"), interesting_valves_orig.clone(), flows_new, distances_new, 26);
+	best_result = std::cmp::max(best_result, other_result);
 
 	return best_result;
 }
@@ -286,7 +367,7 @@ recursive_visit_part_2_old
 fn main() 
 {
 	let lines = read_string_data(
-		std::path::Path::new("./data/input.txt"),
+		std::path::Path::new("./data/example.txt"),
 	).unwrap();
 
 	// Preprocessing
@@ -308,18 +389,18 @@ fn main()
 
 	let start = String::from("AA");
 	let interesting_valves = flows.iter().filter(|(_, &value)| value > 0).map(|(key, _)| key.to_string()).collect::<Vec<String>>();
-	let part_1_result = recursive_visit_v2(&start, &interesting_valves, &flows, &distances, 30);
+	// let part_1_result = recursive_visit_v2(&start, &interesting_valves, &flows, &distances, 30);
 
-	println!("Part 1: {}", part_1_result);
+	// println!("Part 1: {}", part_1_result);
 
 
 	// Part 2
 
-	// let start = String::from("AA");
-	// // let part_2_result = recursive_visit_part_2_old(&start, &start, &leads_to, &flows, &distances, &on_off, 26, 26);
-	// let part_2_result = recursive_visit_part_2();
+	let start = String::from("AA");
+	// let part_2_result = recursive_visit_part_2_old(&start, &start, &leads_to, &flows, &distances, &on_off, 26, 26);
+	let part_2_result = part_2(&start, &interesting_valves, &flows, &distances, 26, true);
 
-	// println!("Part 2: {}", part_2_result);
+	println!("Part 2: {}", part_2_result);
 
 
 }
