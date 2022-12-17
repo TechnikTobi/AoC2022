@@ -22,4 +22,5 @@ Let's see how far I get
 | [Day 14](https://adventofcode.com/2022/day/14) | ⭐ | ⭐ |
 | [Day 15](https://adventofcode.com/2022/day/15) | ⭐ | ⭐ |
 | [Day 16](https://adventofcode.com/2022/day/16) | ⭐ | ⭐ |
+| [Day 17](https://adventofcode.com/2022/day/17) | ⭐ |   |
 <!--- advent_readme_stars table --->
