@@ -51,7 +51,7 @@ Position
 fn main() 
 {
 	let jets = read_line(
-		std::path::Path::new("./data/input.txt"),
+		std::path::Path::new("./data/example.txt"),
 	).unwrap();
 
 	
@@ -119,13 +119,15 @@ fn main()
 	*/
 
 	// Part 1
-	let max_rock_count = 2023;
+	let max_rock_count = 20230000000000;
 	let mut rock_counter = 0u64;
 
 	let mut cave: HashMap<Position, ECaveField> = HashMap::new();
 
 	let mut jet_index: usize = 0;
 	let mut rock_index: usize = 0;
+
+	let mut all_heights: Vec<(u64, u64, u64, u64, u64, u64, u64)> = Vec::new();
 
 	loop
 	{
@@ -248,6 +250,45 @@ fn main()
 				break;
 			}
 
+			let mut heights = (0..7).map(|x| cave.iter().filter(|(pos, value)| pos.x == x && **value == ECaveField::Rock).map(|(pos, _)| pos.y).max().unwrap_or(0)).collect::<Vec<u64>>();
+			let max_height = heights.iter().max().unwrap();
+			let min_height = heights.iter().min().unwrap();
+			let heights_tuple = (
+				max_height - heights[0],
+				max_height - heights[1],
+				max_height - heights[2],
+				max_height - heights[3],
+				max_height - heights[4],
+				max_height - heights[5],
+				max_height - heights[6]
+			);
+			if all_heights.contains(&heights_tuple) && max_height != min_height
+			{
+				// Print
+				let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
+				for y in (0..=max_y).rev()
+				{
+					for x in 0..7
+					{
+						match cave[&Position{x:x, y:y}]
+						{
+							ECaveField::Air => print!("."),
+							ECaveField::Rock => print!("#"),
+							ECaveField::MovingRock => print!("@"),
+						}
+					}
+					print!("\n");
+				}
+				print!("\n");
+				println!("{:?}", heights_tuple);
+				println!("ROCKS: {}", rock_counter);
+				panic!("AH I FOUND IT");
+			}
+			else
+			{
+				all_heights.push(heights_tuple);
+			}
+
 			// Insert emtpy space below rock
 			let max_y = cave.iter().map(|(pos, _)| pos.y as i64).max().unwrap_or(-1i64);
 			for y in max_y+1..=max_y+3
@@ -305,6 +346,20 @@ fn main()
 		// 		panic!("AHHHHH");
 		// 	}
 		// }		
+
+		// if rock_index == 0 && jet_index == 0
+		// {
+		// 	let max_y = ((cave.len() / 7) - 1) as u64;
+		// 	if cave.iter().filter(|(pos, value)| pos.y == max_y && **value == ECaveField::Rock).count() == 7
+		// 	{
+		// 		println!("HEY!!!");
+		// 		println!("ROCKS: {}", rock_counter);
+		// 		println!("MAX Y: {}", max_y);
+		// 		break;
+		// 	}
+		// }
+
+
 	}
 
 	// Print
