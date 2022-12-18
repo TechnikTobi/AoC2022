@@ -56,7 +56,7 @@ fill_cave
 	rocks: &Vec<Vec<String>>,
 	max_rock_count: u64,
 )
--> (u64, u64, u64, u64)
+-> (u64, u64, u64, u64, HashMap<u64, u64>)
 {
 
 	let mut rock_counter = 0u64;
@@ -67,11 +67,12 @@ fill_cave
 	let mut jet_index: usize = 0;
 	let mut rock_index: usize = 0;
 
-	let mut all_heights: HashMap<(u64, u64, u64, u64, u64, u64, u64), (u64, u64)> = HashMap::new();
+	let mut all_heights: HashMap<(u64, u64, u64, u64, u64, u64, u64, u64, u64), (u64, u64)> = HashMap::new();
+	let mut height_archive: HashMap<u64, u64> = HashMap::new();
+	height_archive.insert(0, 0);
 
 	loop
 	{
-		// println!("{}", rock_counter);
 
 		if has_moving(&cave)
 		{
@@ -158,13 +159,12 @@ fill_cave
 		}
 		else
 		{
-			rock_counter += 1;
-			if rock_counter >= max_rock_count { break; }
-
 			let heights = (0..7).map(|x| cave.iter().filter(|(pos, value)| pos.x == x && **value == ECaveField::Rock).map(|(pos, _)| pos.y).max().unwrap_or(0)).collect::<Vec<u64>>();
 			let max_height = heights.iter().max().unwrap();
 			let min_height = heights.iter().min().unwrap();
 			let heights_tuple = (
+				rock_index as u64,
+				jet_index as u64,
 				max_height - heights[0],
 				max_height - heights[1],
 				max_height - heights[2],
@@ -175,29 +175,39 @@ fill_cave
 			);
 			if all_heights.contains_key(&heights_tuple) && max_height != min_height && jet_counter > jets.len()
 			{
-				// Print
-				let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
-				for y in (0..=max_y).rev()
+				let (previous_height, previous_rock_count) = all_heights[&heights_tuple];
+				if rock_counter - previous_rock_count > 50
 				{
-					for x in 0..7
+					// Print
+					let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
+					for y in (0..=max_y).rev()
 					{
-						match cave[&Position{x:x, y:y}]
+						for x in 0..7
 						{
-							ECaveField::Air => print!("."),
-							ECaveField::Rock => print!("#"),
-							ECaveField::MovingRock => print!("@"),
+							match cave[&Position{x:x, y:y}]
+							{
+								ECaveField::Air => print!("."),
+								ECaveField::Rock => print!("#"),
+								ECaveField::MovingRock => print!("@"),
+							}
 						}
+						print!("\n");
 					}
 					print!("\n");
+					
+					return (max_height-previous_height, previous_height, rock_counter, previous_rock_count, height_archive);
 				}
-				print!("\n");
-				let (previous_height, previous_rock_count) = all_heights[&heights_tuple];
-				return (max_height-previous_height, previous_height, rock_counter, previous_rock_count);
 			}
 			else if jet_counter > jets.len()
 			{
 				all_heights.insert(heights_tuple, (*max_height, rock_counter));
 			}
+
+			height_archive.insert(rock_counter, *max_height);
+
+			// Increment counter
+			rock_counter += 1;
+			if rock_counter >= max_rock_count { break; }
 
 			// Insert emtpy space below rock
 			let max_y = cave.iter().map(|(pos, _)| pos.y as i64).max().unwrap_or(-1i64);
@@ -249,13 +259,14 @@ fill_cave
 	print!("\n");
 
 	let height = cave.iter().map(|(pos, _)| pos.y).max().unwrap() + 1;
-	return (height, 0, max_rock_count-1, 0);
+	return (height, 0, max_rock_count-1, 0, height_archive);
 }
 
 fn main() 
 {
 	let jets = read_line(
-		std::path::Path::new("./data/example.txt"),
+		// std::path::Path::new("./data/example.txt"),
+		std::path::Path::new("./data/input.txt"),
 	).unwrap();
 
 	
@@ -290,21 +301,56 @@ fn main()
 	let rocks = vec![rock1, rock2, rock3, rock4, rock5];
 
 	// Part 1
-	let mut max_rock_count = 67;
+	let mut max_rock_count = 1000000000000+1;
+	let old_max_rock_count = max_rock_count.clone();
 	let mut part_1_result = 0;
-	while max_rock_count > 1
-	{
-		println!("Old max rock count: {}", max_rock_count);
+	// while max_rock_count > 1
+	// {
+	// 	println!("Old max rock count: {}", max_rock_count);
 		
-		let (height, offset, rock_count, previous_rock_count) = fill_cave(&jets, &rocks, max_rock_count);
-		println!("height: {}     offset: {}     rock_count: {}     previous_rock_count: {}", height, offset, rock_count, previous_rock_count);
+	// 	let (height, offset, rock_count, previous_rock_count, height_archive) = fill_cave(&jets, &rocks, max_rock_count);
+	// 	println!("height: {}     offset: {}     rock_count: {}     previous_rock_count: {}", height, offset, rock_count, previous_rock_count);
 
-		part_1_result += std::cmp::max((max_rock_count-previous_rock_count) / (rock_count-previous_rock_count) - 1, 1) * (height) + offset + 1;
-		max_rock_count = max_rock_count % rock_count;
+	// 	part_1_result += std::cmp::max((max_rock_count-previous_rock_count) / (rock_count-previous_rock_count), 1) * (height) + offset + 1;
+	// 	max_rock_count = max_rock_count % rock_count;
 
-		println!("New max rock count: {}", max_rock_count);
-	}
-	println!("Part 1: {}", part_1_result - 1);
+	// 	println!("New max rock count: {}", max_rock_count);
+	// }
+
+	let (height, offset, rock_count, previous_rock_count, height_archive) = fill_cave(&jets, &rocks, max_rock_count);
+	println!("height: {}     offset: {}     rock_count: {}     previous_rock_count: {}", height, offset, rock_count, previous_rock_count);
+
+	part_1_result += std::cmp::max((max_rock_count-previous_rock_count) / (rock_count-previous_rock_count), 1) * (height) + offset;
+	println!("Part 1: {}", part_1_result);
+
+	let times = (max_rock_count-previous_rock_count) / (rock_count-previous_rock_count);
+	println!("Times: {}", times);
+	let rocks_used_so_far = times * (rock_count - previous_rock_count) + previous_rock_count;
+	println!("Rocks used so far: {}", rocks_used_so_far);
+	let rocks_remaining = max_rock_count - rocks_used_so_far;
+	println!("Rocks remaining: {}", rocks_remaining);
+	let archive_index = previous_rock_count + rocks_remaining;
+	let archived_height = height_archive[&archive_index] - height_archive[&previous_rock_count];
+	println!("Archived height: {}", archived_height);
+
+	part_1_result += archived_height;
+	println!("Part 1: {}", part_1_result);
+
+
+	// max_rock_count -= (max_rock_count-previous_rock_count) / (rock_count-previous_rock_count) * (rock_count - previous_rock_count);
+	// println!("new max_rock_count: {}", max_rock_count);
+	// // let test = max_rock_count - (max_rock_count-previous_rock_count) / (rock_count-previous_rock_count) * (rock_count - previous_rock_count) - previous_rock_count;
+	// // println!("{}", test);
+
+	// println!("height_archive[&(std::cmp::max(max_rock_count,1)-1)]: {}", height_archive[&(std::cmp::max(max_rock_count,1)-1)]);
+	// println!("height_archive[&(std::cmp::max(previous_rock_count,0))]: {}", height_archive[&(std::cmp::max(previous_rock_count,0))]);
+	// part_1_result += height_archive[&(std::cmp::max(max_rock_count,1))] - height_archive[&(std::cmp::max(previous_rock_count,0))];
+
+	// println!("Part 1: {}", part_1_result);
+
+	old_solve(&jets, &rocks, old_max_rock_count);
+
+
 
 
 }
@@ -342,97 +388,14 @@ trim_cave
 	}
 }
 
-
-/*
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::fs::File;
-use std::hash::Hash;
-use std::io::BufRead;
-use std::io::BufReader;
-
-pub fn read_line
-(
-	path: &std::path::Path
-)
--> Result<String, Box<dyn std::error::Error>>
-{
-	let file = File::open(path)?;
-	let lines = BufReader::new(file).lines();
-
-	for result_line in lines
-	{
-		return Ok(result_line?);
-	}
-
-	return Ok("".to_string());
-}
-
 fn
-move_left
+old_solve
 (
-	buffer: &mut Vec<String>
+	jets: &String,
+	rocks: &Vec<Vec<String>>,
+	max_rock_count: u64,
 )
 {
-
-}
-
-#[derive(PartialEq, Eq, Clone)]
-enum
-ECaveField
-{
-	Air,
-	Rock,
-	MovingRock
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-struct
-Position
-{
-	x: u64,
-	y: u64,
-}
-
-fn main() 
-{
-	let jets = read_line(
-		std::path::Path::new("./data/input.txt"),
-	).unwrap();
-
-	
-	let rock1 = vec![
-		"..####.".to_string(),
-	];
-
-	let rock2 = vec![
-		"...#...".to_string(),
-		"..###..".to_string(),
-		"...#...".to_string(),
-	];
-
-	let rock3 = vec![
-		"....#..".to_string(),
-		"....#..".to_string(),
-		"..###..".to_string(),
-	];
-
-	let rock4 = vec![
-		"..#....".to_string(),
-		"..#....".to_string(),
-		"..#....".to_string(),
-		"..#....".to_string(),
-	];
-
-	let rock5 = vec![
-		"..##...".to_string(),
-		"..##...".to_string(),
-	];
-
-	let rocks = vec![rock1, rock2, rock3, rock4, rock5];
-
-	// Part 1
-	let max_rock_count = 136;
 	let mut rock_counter = 0u64;
 
 	let mut cave: HashMap<Position, ECaveField> = HashMap::new();
@@ -442,7 +405,6 @@ fn main()
 
 	loop
 	{
-		println!("{}", rock_counter);
 
 		if has_moving(&cave)
 		{
@@ -591,61 +553,26 @@ fn main()
 			rock_index += 1;
 			rock_index = rock_index % rocks.len();
 		}
+
 	}
 
 	// Print
-	let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
-	for y in (0..=max_y).rev()
-	{
-		for x in 0..7
-		{
-			match cave[&Position{x:x, y:y}]
-			{
-				ECaveField::Air => print!("."),
-				ECaveField::Rock => print!("#"),
-				ECaveField::MovingRock => print!("@"),
-			}
-		}
-		print!("\n");
-	}
-	print!("\n");
+	// let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
+	// for y in (0..=max_y).rev()
+	// {
+	// 	for x in 0..7
+	// 	{
+	// 		match cave[&Position{x:x, y:y}]
+	// 		{
+	// 			ECaveField::Air => print!("."),
+	// 			ECaveField::Rock => print!("#"),
+	// 			ECaveField::MovingRock => print!("@"),
+	// 		}
+	// 	}
+	// 	print!("\n");
+	// }
+	// print!("\n");
 
 	let part_1_result = cave.iter().map(|(pos, _)| pos.y).max().unwrap() + 1;
-	println!("Part 1: {}", part_1_result);
-
-
+	println!("Old Part 1: {}", part_1_result);
 }
-
-fn
-has_moving
-(
-	cave: &HashMap<Position, ECaveField>
-)
--> bool
-{
-	return cave.iter().filter(|(_, value)| **value == ECaveField::MovingRock).count() > 0;
-}
-
-fn 
-trim_cave
-(
-	cave: &mut HashMap<Position, ECaveField>
-) 
-{
-	if cave.is_empty()
-	{
-		return;
-	}
-	loop 
-	{
-		let max_y = cave.iter().map(|(pos, _)| pos.y).max().unwrap();
-		if cave.iter().filter(|(pos, value)| pos.y == max_y && **value == ECaveField::Air).count() == 7
-		{
-			cave.retain(|pos, _| pos.y < max_y);
-		}
-		else {
-			break;
-		}
-	}
-}
-*/
