@@ -78,7 +78,7 @@ fill_cave
 	rocks: &Vec<Vec<String>>,
 	max_rock_count: u64,
 )
--> (u64, u64, u64, u64, HashMap<u64, u64>)
+-> i64
 {
 
 	let mut rock_counter = 0u64;
@@ -93,14 +93,21 @@ fill_cave
 	let mut height_archive: HashMap<u64, u64> = HashMap::new();
 	height_archive.insert(0, 0);
 
+	let mut cycle_found = false;
+
+	let mut height_after_cycle_detection: u64 = 0;
+	let mut height_before_start_of_cycle: u64 = 0;
+
+	let mut rock_count_after_cycle_detection: u64 = 0;
+	let mut rock_count_before_start_of_cycle: u64 = 0;
+
 	loop
 	{
 
 		if has_moving(&cave)
 		{
 			let jet = jets.chars().nth(jet_index).unwrap();
-			jet_index += 1;
-			jet_index = jet_index % jets.len();
+			jet_index = (jet_index+1) % jets.len();
 			jet_counter += 1;
 
 			// Push
@@ -173,11 +180,15 @@ fill_cave
 			);
 			if all_heights.contains_key(&heights_tuple) && max_height != min_height && jet_counter > jets.len()
 			{
+				cycle_found = true;
+
 				let (previous_height, previous_rock_count) = all_heights[&heights_tuple];
-				if rock_counter - previous_rock_count > 50
-				{	
-					return (max_height-previous_height, previous_height, rock_counter, previous_rock_count, height_archive);
-				}
+				height_after_cycle_detection = *max_height;
+				height_before_start_of_cycle = previous_height;
+				rock_count_after_cycle_detection = rock_counter;
+				rock_count_before_start_of_cycle = previous_rock_count;
+
+				break;
 			}
 			else if jet_counter > jets.len()
 			{
@@ -186,8 +197,6 @@ fill_cave
 
 			height_archive.insert(rock_counter, *max_height);
 
-
-			
 			// Increment counter
 			rock_counter += 1;
 			if rock_counter >= max_rock_count { break; }
@@ -219,21 +228,42 @@ fill_cave
 				}
 			}
 
-			rock_index += 1;
-			rock_index = rock_index % rocks.len();
+			rock_index = (rock_index+1) % rocks.len();
 		}
 	}
 
-	let height = cave.iter().map(|(pos, _)| pos.y).max().unwrap() + 1;
-	return (height, 0, max_rock_count-1, 0, height_archive);
+	if !cycle_found
+	{
+		height_after_cycle_detection = cave.iter().map(|(pos, _)| pos.y).max().unwrap() + 1;
+		height_before_start_of_cycle = 0;
+		rock_count_after_cycle_detection = max_rock_count-1;
+		rock_count_before_start_of_cycle = 0;
+	}
+	
+
+	let cycle_height = height_after_cycle_detection - height_before_start_of_cycle;
+	let rocks_used_in_cycle = rock_count_after_cycle_detection - rock_count_before_start_of_cycle;
+
+	// Note: This rounds down the result as we use integers for the division
+	let times_cycle_fits = (max_rock_count - rock_count_before_start_of_cycle) / rocks_used_in_cycle;
+	
+	let rocks_used_to_fill_with_cycle = times_cycle_fits * (rock_count_after_cycle_detection - rock_count_before_start_of_cycle) + rock_count_before_start_of_cycle;
+	let rocks_remaining_above_last_cycle = max_rock_count - rocks_used_to_fill_with_cycle;
+
+	let archive_index = rocks_remaining_above_last_cycle + rock_count_before_start_of_cycle;
+	let height_above_cycles = height_archive[&archive_index] - height_archive[&rock_count_before_start_of_cycle];
+
+	let final_height = times_cycle_fits * cycle_height + height_before_start_of_cycle + height_above_cycles;
+
+	return final_height as i64;
+
 }
 
 fn main() 
 {
 	let jets = read_line(
-		std::path::Path::new("./data/example.txt"),
+		std::path::Path::new("./data/input.txt"),
 	).unwrap();
-
 	
 	let rock1 = vec![
 		"..####.".to_string(),
@@ -265,30 +295,12 @@ fn main()
 
 	let rocks = vec![rock1, rock2, rock3, rock4, rock5];
 
-	// Part 1
-	let max_rock_count = 1000000000000+1;
-
-	let mut part_1_result = 0;
-
-
-	let (height, offset, rock_count, previous_rock_count, height_archive) = fill_cave(&jets, &rocks, max_rock_count);
-
-
-	part_1_result += std::cmp::max((max_rock_count-previous_rock_count) / (rock_count-previous_rock_count), 1) * (height) + offset;
-
-
-	let times = (max_rock_count-previous_rock_count) / (rock_count-previous_rock_count);
-
-	let rocks_used_so_far = times * (rock_count - previous_rock_count) + previous_rock_count;
-
-	let rocks_remaining = max_rock_count - rocks_used_so_far;
-
-	let archive_index = previous_rock_count + rocks_remaining;
-	let archived_height = height_archive[&archive_index] - height_archive[&previous_rock_count];
-
-
-	part_1_result += archived_height;
+	// Part 1 - For some reason does not work for example input
+	let part_1_result = fill_cave(&jets, &rocks, 2023);
 	println!("Part 1: {}", part_1_result);
 
-}
+	// Part 2
+	let part_2_result = fill_cave(&jets, &rocks, 1000000000000+1);
+	println!("Part 2: {}", part_2_result);
 
+}
