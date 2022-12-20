@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use memoize::memoize;
 
 pub fn read_string_data
 (
@@ -84,45 +83,6 @@ floyd_warshall
 
 	return distances;
 }
-
-
-#[memoize]
-fn 
-part_1
-(
-	start: String,
-	interesting_valves_orig: Vec<String>,
-	flows: Vec<(String, i64)>,
-	distances: Vec<(String, String, i64)>,
-	remaining_time: i64,
-)
--> i64
-{
-	let mut best_result = 0;
-
-	for valve in &interesting_valves_orig
-	{
-		// We know about the valve at this point: It has positive flow & is closed
-		// let distance = distances[&(start.clone(), valve.clone())];
-		let distance = distances.iter().filter(|(a, b, _)| *a == start && b == valve).map(|(_ , _, distance)| distance).next().unwrap();
-
-		// Check if visiting that valve is even possible
-		if distance > &(remaining_time+1)
-		{
-			continue;
-		}
-
-		// let flow = flows[&valve.clone()];
-		let flow = flows.iter().filter(|(a, _)| a == valve).map(|(_, flow)| flow).next().unwrap();
-		let interesting_valves = interesting_valves_orig.iter().filter(|&x| x != valve).map(|x| x.to_owned()).collect::<Vec<String>>();
-
-		let result = part_1(valve.clone(), interesting_valves.clone(), flows.clone(), distances.clone(), remaining_time-distance-1);
-		best_result = std::cmp::max(best_result, result + (remaining_time-distance-1)*flow);
-	}
-
-	return best_result;
-}
-
 
 fn 
 recursive_visit_v2
@@ -207,163 +167,6 @@ part_2
 
 
 
-fn 
-recursive_visit_part_2_old
-(
-	start_me: &String,
-	start_elephant: &String,
-	leads_to: &HashMap<String, Vec<String>>,
-	flows: &HashMap<String, i64>,
-	distances: &HashMap<(String, String), i64>,
-	on_off_orig: &HashMap<String, bool>,
-	remaining_time_me: i64,
-	remaining_time_elephant: i64,
-)
--> i64
-{
-	let mut best_result = 0;
-
-	if remaining_time_me <= 0 || remaining_time_elephant <= 0
-	{
-		return best_result;
-	}
-
-	let valves = leads_to.keys().map(|x| x.to_string()).collect::<Vec<String>>();
-
-	let mut viable_valves = Vec::new();
-
-	for valve in &valves
-	{
-		let flow = flows[&valve.clone()];
-		if flow <= 0
-		{
-			continue;
-		}
-
-		if on_off_orig[&valve.clone()]
-		{
-			continue;
-		}
-
-		// We know about the valve at this point: It has positive flow & is closed
-		let distance_me = distances[&(start_me.clone(), valve.clone())];
-		let distance_elephant = distances[&(start_elephant.clone(), valve.clone())];
-
-		// Check if visiting that valve is even possible for one of the two
-		if distance_me > remaining_time_me+1 && distance_elephant > remaining_time_elephant+1
-		{
-			continue;
-		}
-
-		viable_valves.push(valve);
-	}
-
-	viable_valves.sort();
-
-	
-
-	for (i_1, v1) in viable_valves.iter().enumerate()
-	{
-		for (i_2, v2) in viable_valves.iter().enumerate()
-		{
-			if i_2 <= i_1
-			{
-				continue;
-			}
-
-			let flow_1 = flows[v1.clone()];
-			let flow_2 = flows[v2.clone()];
-
-			let distance_v1_me = distances[&(start_me.clone(), (*v1).clone())];
-			let distance_v1_elephant = distances[&(start_elephant.clone(), (*v1).clone())];
-			let distance_v2_me = distances[&(start_me.clone(), (*v2).clone())];
-			let distance_v2_elephant = distances[&(start_elephant.clone(), (*v2).clone())];
-
-			if distance_v1_elephant <= remaining_time_elephant + 1
-			{
-				let mut on_off = on_off_orig.clone();
-				on_off.insert((*v1).clone(), true);
-				if distance_v2_me <= remaining_time_me + 1
-				{
-					// elephant -> v1
-					// me -> v2
-					on_off.insert((*v2).clone(), true);
-					let result = recursive_visit_part_2_old(v2, v1, leads_to, flows, distances, &on_off, remaining_time_me-distance_v2_me-1, remaining_time_elephant-distance_v1_elephant-1);
-					best_result = std::cmp::max(best_result, result + (remaining_time_me-distance_v2_me-1)*flow_2 + (remaining_time_elephant-distance_v1_elephant-1)*flow_1);
-				}
-				else 
-				{
-					// elephant -> v1
-					// me -> staying where I am	
-					let result = recursive_visit_part_2_old(start_me, v1, leads_to, flows, distances, &on_off, remaining_time_me, remaining_time_elephant-distance_v1_elephant-1);
-					best_result = std::cmp::max(best_result, result + (remaining_time_elephant-distance_v1_elephant-1)*flow_1);
-				}
-			}
-
-			if distance_v2_elephant <= remaining_time_elephant + 1
-			{
-				let mut on_off = on_off_orig.clone();
-				on_off.insert((*v2).clone(), true);
-				if distance_v1_me <= remaining_time_me + 1
-				{
-					// elephant -> v2
-					// me -> v1
-					on_off.insert((*v1).clone(), true);
-					let result = recursive_visit_part_2_old(v1, v2, leads_to, flows, distances, &on_off, remaining_time_me-distance_v1_me-1, remaining_time_elephant-distance_v2_elephant-1);
-					best_result = std::cmp::max(best_result, result + (remaining_time_me-distance_v1_me-1)*flow_1 + (remaining_time_elephant-distance_v2_elephant-1)*flow_2);
-				}
-				else
-				{
-					// elephant -> v2
-					// me -> staying where I am	
-					let result = recursive_visit_part_2_old(start_me, v2, leads_to, flows, distances, &on_off, remaining_time_me, remaining_time_elephant-distance_v2_elephant-1);
-					best_result = std::cmp::max(best_result, result + (remaining_time_elephant-distance_v2_elephant-1)*flow_2);
-				}
-			}
-
-			if distance_v1_elephant > remaining_time_elephant + 1 && distance_v2_elephant > remaining_time_elephant + 1
-			{
-				if distance_v1_me <= remaining_time_me + 1
-				{
-					// elephant -> staying
-					// me -> v1
-					let mut on_off = on_off_orig.clone();
-					on_off.insert((*v1).clone(), true);
-					let result = recursive_visit_part_2_old(v1, start_elephant, leads_to, flows, distances, &on_off, remaining_time_me-distance_v1_me-1, remaining_time_elephant);
-					best_result = std::cmp::max(best_result, result + (remaining_time_me-distance_v1_me-1)*flow_1);
-				}
-				else if distance_v2_me <= remaining_time_me + 1
-				{	
-					// elephant -> staying
-					// me -> v2
-					let mut on_off = on_off_orig.clone();
-					on_off.insert((*v2).clone(), true);
-					let result = recursive_visit_part_2_old(v2, start_elephant, leads_to, flows, distances, &on_off, remaining_time_me-distance_v2_me-1, remaining_time_elephant);
-					best_result = std::cmp::max(best_result, result + (remaining_time_me-distance_v2_me-1)*flow_2);
-				}
-			}
-		}
-	}
-
-	return best_result;
-}
-
-
-
-
-
-
-// fn
-// part_2_queue
-// (
-// 	flows: &HashMap<String, i64>,
-// 	distances: &HashMap<(String, String), i64>,
-// )
-// {
-// 	let interesting = flows.iter().filter(|(key, &value)| value > 0 || **key == "AA".to_string()).map(|(key, _)| key.to_string()).collect::<Vec<String>>();
-	
-// }
-
 fn main() 
 {
 	let lines = read_string_data(
@@ -387,7 +190,6 @@ fn main()
 	// Part 1
 	// Example: 20*28 + 13*25 + 21*21 + 22*13 + 3*9 + 2*6
 
-	let start = String::from("AA");
 	let interesting_valves = flows.iter().filter(|(_, &value)| value > 0).map(|(key, _)| key.to_string()).collect::<Vec<String>>();
 	// let part_1_result = recursive_visit_v2(&start, &interesting_valves, &flows, &distances, 30);
 
