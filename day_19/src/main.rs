@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 pub fn read_string_data
 (
@@ -26,7 +24,7 @@ pub fn read_string_data
 fn main() 
 {
 	let lines = read_string_data(
-		std::path::Path::new("./data/example.txt")
+		std::path::Path::new("./data/input.txt")
 	).unwrap();
 
 	let max_minutes = 24;
@@ -83,17 +81,15 @@ fn main()
 		}
 
 		let costs = vec![ore_robot_costs, clay_robot_costs, obsidian_robot_costs, geode_robot_costs];
-		println!("{:?}", costs);
-		let mut robots = vec![1i64, 0, 0, 0];
-		let mut resources = vec![0i64, 0, 0, 0];
+		let mut robots = vec![0i64, 0, 0, 0];
+		let mut resources = vec![costs[0][0].clone(), 0, 0, 0];
 
 		// Get result and insert it
-		let blueprint_result = part_1_recusion(&costs, &robots, &robots,&resources, 1, max_minutes);
+		let blueprint_state = ProblemState { costs, robots, next_robot_index: 0, resources, minute: 0, max_minutes: max_minutes }; 
+		let blueprint_result = part_1(blueprint_state);
 		println!("Result for blueprint {}: {}", blueprint_id, blueprint_result);
 		
 		quality_level_sum += blueprint_result * blueprint_id;
-
-		break;
 	}
 
 	let part_1_result = quality_level_sum;
@@ -101,79 +97,96 @@ fn main()
 	
 }
 
-fn
-part_1_recusion
-(
-	costs: &Vec<Vec<i64>>,
-	old_robots: &Vec<i64>,
-	robots: &Vec<i64>,
-	resources: &Vec<i64>,
+
+#[derive(Clone)]
+struct
+ProblemState
+{
+	costs: Vec<Vec<i64>>,
+	robots: Vec<i64>,
+	next_robot_index: usize,
+	resources: Vec<i64>,
 	minute: i64,
-	max_minutes: i64
+	max_minutes: i64 
+}
+
+fn
+part_1
+(
+	mut state: ProblemState
 )
 -> i64
 {
 
-	// println!("{} {:?}", minute, resources);
+	// println!("{} {:?}", state.minute, state.resources);
 
-	if minute > max_minutes
+	let mut new_robot_constructed = false;
+	while !new_robot_constructed && state.minute <= state.max_minutes
 	{
-		return resources[3];
-	}
-
-	let mut new_resources = resources.clone();
-
-	for (robot_id, robot_count) in old_robots.iter().enumerate()
-	{
-		new_resources[robot_id] += robot_count;
-	}
-
-	println!("After minute {} you have {:?}", minute, new_resources);
-	println!("{:?}", new_resources);
-	println!("{:?}", costs);
-
-	let mut results = Vec::new();
-	for (robot_id, robot_costs) in costs.iter().enumerate()
-	{
-		// if robot_id != 3 && costs.iter().all(|c| c[robot_id] <= new_resources[robot_id] + robots[robot_id])
-		// {
-		// 	println!("Skipping robot {}", robot_id);
-		// 	continue;
-		// }
-		if robot_id == 1
+		// Check for invalid robot indices
+		if ![0, 1, 2, 3].contains(&state.next_robot_index)
 		{
-			println!("{}", robots[robot_id]);
-			if new_resources[0] + robots[0] >= costs[2][0] && new_resources[1] + robots[1] >= costs[2][1]
+			panic!("Unknown robot index")
+		}
+
+		// Check if we can build the next robot
+		if state.resources.iter().enumerate().all(|(resource_index, resource)| resource >= &state.costs[state.next_robot_index][resource_index])
+		{
+			for (cost_index, cost) in state.costs[state.next_robot_index].iter().enumerate()
+			{
+				state.resources[cost_index] -= cost;
+			}
+			new_robot_constructed = true;	
+		}
+
+		// Mine resources
+		for (robot_id, robot_count) in state.robots.iter().enumerate()
+		{
+			state.resources[robot_id] += robot_count;
+		}
+
+		// Advance time
+		state.minute += 1;
+
+		// Construct the new robot
+		if new_robot_constructed
+		{
+			state.robots[state.next_robot_index] += 1;
+		}
+	}
+
+	let mut geodes = state.resources[3];
+	if state.minute <= state.max_minutes
+	{
+		for new_next_robot_index in [0, 1, 2, 3]
+		{
+			// Don't build obsidian robots when we don't even have yet any clay robots
+			if new_next_robot_index == 2 && state.robots[1] == 0
 			{
 				continue;
 			}
-		}
 
-		let mut can_afford_robot = true;
-		let mut new_resources_clone = new_resources.clone();
-		for (cost_id, cost) in robot_costs.iter().enumerate()
-		{
-			new_resources_clone[cost_id] -= cost;
-			if new_resources_clone[cost_id] < 0
+			// Don't build geode robots when we don't even have yet any obsidian robots
+			if new_next_robot_index == 3 && state.robots[2] == 0
 			{
-				can_afford_robot = false;
+				continue;
 			}
+
+			if 
+				(new_next_robot_index == 0 && state.robots[0] == state.costs.iter().map(|cost| cost[0]).max().unwrap()) ||
+				(new_next_robot_index == 1 && state.robots[1] == state.costs[2][1]) ||
+				(new_next_robot_index == 2 && state.robots[2] == state.costs[3][2])
+			{
+				continue;
+			}
+
+			let mut new_state = state.clone();
+			new_state.next_robot_index = new_next_robot_index;
+			let new_state_result = part_1(new_state);
+			geodes = std::cmp::max(geodes, new_state_result);
 		}
-
-		if !can_afford_robot
-		{
-			continue;
-		}
-
-		let mut new_robots = robots.clone();
-		new_robots[robot_id] += 1;
-
-		results.push(part_1_recusion(costs, &robots, &new_robots, &new_resources_clone, minute+1, max_minutes));
-	}
-	if results.is_empty()
-	{
-		results.push(part_1_recusion(costs, &robots, &robots, &new_resources, minute+1, max_minutes));
 	}
 
-	return *results.iter().max().unwrap();
+	return geodes;
+	
 }
