@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str::FromStr;
 
 pub fn read_string_data
 (
@@ -99,6 +98,8 @@ fn main()
 	let max_y = lines.len()-2;
 	let max_x = lines.iter().enumerate().filter(|(line_index, _)| line_index <= &max_y).map(|(_, line)| line.len()).max().unwrap();
 
+	println!("{} {}", max_x, max_y);
+
 	// Move instructions
 	let instructions = lines.last().unwrap();
 
@@ -150,7 +151,7 @@ fn main()
 		else
 		{
 			let distance = temp.parse::<i64>().unwrap();
-			current_position = board_move(&board_map, &current_position, &current_direction, distance, max_x as i64, max_y as i64);
+			current_position = board_move_part_1(&board_map, &current_position, &current_direction, distance, max_x as i64, max_y as i64);
 			current_direction = current_direction.rotate(character);
 			temp.clear();
 		}
@@ -158,7 +159,7 @@ fn main()
 
 	// For any remaining data in temp
 	let distance = temp.parse::<i64>().unwrap();
-	current_position = board_move(&board_map, &current_position, &current_direction, distance, max_x as i64, max_y as i64);
+	current_position = board_move_part_1(&board_map, &current_position, &current_direction, distance, max_x as i64, max_y as i64);
 
 	let part_1_result = 1000 * (current_position.y+1) + 4 * (current_position.x+1) + match current_direction {
 		EDirection::West => 0,
@@ -172,7 +173,7 @@ fn main()
 }
 
 fn
-board_move
+board_move_part_1
 (
 	board_map: &HashMap<Position, EField>,
 	current_position: &Position,
@@ -195,14 +196,122 @@ board_move
 	
 	for _ in 0..distance
 	{
-		let mut new_position_candidate = Position
+		let mut new_position_candidate = new_position.clone();
+		
+		while board_map[&new_position_candidate] == EField::Teleport || new_position_candidate == new_position
+		{
+			new_position_candidate =  Position
+			{
+				x: (new_position_candidate.x + delta_x + max_x) % max_x,
+				y: (new_position_candidate.y + delta_y + max_y) % max_y
+			};
+		}
+
+		if board_map[&new_position_candidate] == EField::Empty
+		{
+			new_position = new_position_candidate;
+		}
+	}
+	return new_position;
+}
+
+
+fn
+board_move_part_2
+(
+	board_map: &HashMap<Position, EField>,
+	current_position: &Position,
+	current_direction: &EDirection,
+	distance: i64,
+	max_x: i64, 
+	max_y: i64,
+)
+-> (Position, EDirection)
+{
+
+	let mut direction = current_direction.clone();
+
+	let (delta_x, delta_y) = match direction
+	{
+		EDirection::North => (0i64, -1i64),
+		EDirection::West => (1, 0),
+		EDirection::South => (0, 1),
+		EDirection::East => (-1, 0),
+	};
+
+	let mut new_position = current_position.clone();
+	
+	for _ in 0..distance
+	{
+
+		// All boards have same shape
+		// See: https://www.reddit.com/r/adventofcode/comments/zsgbe7/2022_day_22_question_about_your_input/?utm_source=share&utm_medium=web2x&context=3
+		// Shape:
+		//    _ _
+		//   |1|2|
+		//  _|3|
+		// |4|5|
+		// |6| 
+
+		// Sides 6 and 3 are parallel
+		// View for the different sides:
+
+		//    4
+		//  1 6 5
+		//    2
+
+		if new_position.y >= 3 * (max_y / 4)                                    // Side 6
+		{
+			let mut new_x = new_position.x + delta_x;
+			let mut new_y = new_position.y + delta_y;
+
+			if new_x < 0 // Going to 1
+			{
+				new_x = new_position.y - 3 * (max_y / 4);
+				new_y = 0;
+			}
+			else if new_x >= max_y / 4 // Going to 5
+			{
+				new_x = new_position.y - max_y / 2;
+				new_y = 3 * max_y / 4 - 1;
+			}
+			else if new_y >= max_y
+			{
+				
+			}
+		}
+		else if new_position.x < (max_y / 4)                                    // Side 4
+		{
+
+		}
+		else if new_position.y >= max_y / 2                                     // Side 5
+		{
+
+		}
+		else if new_position.y >= max_y / 4                                     // Side 3
+		{
+
+		}
+		else if new_position.x >= max_y / 2                                     // Side 2
+		{
+
+		}
+		else                                                                    // Side 1
+		{
+
+		}
+
+
+
+		let mut new_position_candidate =  Position
 		{
 			x: (new_position.x + delta_x + max_x) % max_x,
 			y: (new_position.y + delta_y + max_y) % max_y
 		};
 
-		// Teleport to the next field on the board
-		while board_map[&new_position_candidate] == EField::Teleport
+
+		
+		while board_map[&new_position_candidate] == EField::Teleport || new_position_candidate == new_position
 		{
 			new_position_candidate =  Position
 			{
