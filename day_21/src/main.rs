@@ -43,8 +43,10 @@ fn main()
 	let part_2_equation = evaluate_part_2(&monkey_expressions, &String::from("root"));
 	println!("Part 2 Equation: {}", part_2_equation);
 
-	let part_2_result = resolve_part_2(&part_2_equation);
-	println!("Part 2: {}", part_2_result);
+	let part_2_expression = resolve_part_2(&part_2_equation);
+	println!("Part 2 Expression: {}", part_2_expression);
+
+	println!("Part 2: {}", evaluate_expression(&part_2_expression));
 
 }
 
@@ -123,20 +125,10 @@ evaluate_part_2
 		{
 			left_operand = format!("{}", evaluate_part_1(monkey_expressions, &left_monkey));
 		}
-		else
-		{
-			// println!("Left: {}", left_operand);
-			// println!("Right: {}", right_operand);
-		}
 
 		if !right_operand.contains('x')
 		{
 			right_operand = format!("{}", evaluate_part_1(monkey_expressions, &right_monkey));
-		}
-		else
-		{
-			// println!("Left: {}", left_operand);
-			// println!("Right: {}", right_operand);
 		}
 
 		if monkey_to_evaluate == &String::from("root")
@@ -161,12 +153,14 @@ evaluate_part_2
 	}
 }
 
+
+
 fn 
 resolve_part_2
 (
 	equation: &String
 ) 
--> f64
+-> String
 {
 
 	let mut left_side = equation.split('=').nth(0).unwrap().trim();
@@ -181,64 +175,124 @@ resolve_part_2
 		right_side = temp;
 	}
 
-	// Parse the value on the right
-	let right_side_value = right_side.trim().parse::<f64>().unwrap();
-
 	// Remove parentheses
-	let mut left_expression = &left_side[1..left_side.len()-1];
-	let mut raw_operand = String::new();
-	let operator: char;
+	let mut expression = &left_side[1..left_side.len()-1];
 
-	if left_expression.chars().next().unwrap() == '('
+	if expression == String::from("x")
 	{
-		// Numeric operand is on the right
-		while left_expression.chars().last().unwrap().is_ascii_digit()
-		{
-			raw_operand.push(left_expression.chars().last().unwrap());
-			left_expression = &left_expression[..left_expression.len()-1];
-		}
-
-		operator = left_expression.chars().last().unwrap();
-		left_expression = &left_expression[..left_expression.len()-1];
-
+		return right_side.to_string();
 	}
-	else if left_expression.chars().last().unwrap() == ')'
+
+	let mut operator = '!';
+	let mut depth_counter = 0;
+	let mut expression_left = String::new();
+	for char in expression.chars()
 	{
-		// Numeric operand is on the left
-		while left_expression.chars().next().unwrap().is_ascii_digit()
+		if char == '('
 		{
-			raw_operand.push(left_expression.chars().next().unwrap());
-			left_expression = &left_expression[1..];
+			depth_counter += 1;
 		}
-		operator = left_expression.chars().next().unwrap();
-		left_expression = &left_expression[1..];
+		if char == ')'
+		{
+			depth_counter -= 1;
+		}
+
+		if depth_counter == 0
+		{
+			if char != '(' && char != ')' && !char.is_ascii_digit()
+			{
+				operator = char;
+				break;
+			}
+		}
+
+		expression_left.push(char);
+	}
+
+	let expression_right = &expression[expression_left.len()+1..];
+
+
+	let new_right_side_value: String;
+	let new_equation: String;
+	if expression_left.contains('x')
+	{
+		new_right_side_value = match operator
+		{
+			'+' => format!("({}-{})", right_side, expression_right),
+			'-' => format!("({}+{})", right_side, expression_right),
+			'*' => format!("({}/{})", right_side, expression_right),
+			'/' => format!("({}*{})", right_side, expression_right),
+			_ => panic!("AH1"),
+		};
+		new_equation = format!("{}={}", expression_left, new_right_side_value);
 	}
 	else
 	{
-		// Expression of form "(x)"
-		return right_side_value;
+		new_right_side_value = match operator
+		{
+			'+' => format!("({}-{})", right_side, expression_left),
+			'-' => format!("({}-{})", expression_left, right_side),
+			'*' => format!("({}/{})", right_side, expression_left),
+			'/' => format!("({}/{})", expression_left, right_side),
+			_ => panic!("AH2"),
+		};
+		new_equation = format!("{}={}", expression_right, new_right_side_value);
 	}
 
-	let left_side_operand = raw_operand.parse::<f64>().unwrap();
-
-
-
-	let new_right_side_value = match operator
-	{
-		'+' => right_side_value - left_side_operand,
-		'-' => right_side_value + left_side_operand,
-		'*' => right_side_value / left_side_operand,
-		'/' => right_side_value * left_side_operand,
-		_ => panic!("AH"),
-	};
-
-	let new_equation = format!("{} = {}", left_expression, new_right_side_value);
-
-	// println!("Input: {}", equation);
-	// println!("left: {}", left_expression);
-	// println!("right: {}", right_side);
-	// println!("New: {}", new_equation);
-	// println!("\n");
-
 	return resolve_part_2(&new_equation);
+}
+
+
+fn
+evaluate_expression
+(
+	expression: &String
+)
+-> f64
+{
+	if expression.chars().all(|char| char.is_ascii_digit())
+	{
+		return expression.parse::<f64>().unwrap();
+	}
+
+	let new_expression = &expression.as_str()[1..expression.len()-1];
+	let mut operator = '!';
+	let mut depth_counter = 0;
+	let mut expression_left = String::new();
+	for char in new_expression.chars()
+	{
+		if char == '('
+		{
+			depth_counter += 1;
+		}
+		if char == ')'
+		{
+			depth_counter -= 1;
+		}
+
+		if depth_counter == 0
+		{
+			if char != '(' && char != ')' && !char.is_ascii_digit()
+			{
+				operator = char;
+				break;
+			}
+		}
+
+		expression_left.push(char);
+	}
+	let expression_right = &new_expression[expression_left.len()+1..];
+
+	let expression_left_value = evaluate_expression(&expression_left);
+	let expression_right_value = evaluate_expression(&expression_right.to_string());
+
+	return match operator
+	{
+		'+' => expression_left_value + expression_right_value,
+		'-' => expression_left_value - expression_right_value,
+		'*' => expression_left_value * expression_right_value,
+		'/' => expression_left_value / expression_right_value,
+		_ => panic!("AH3"),
+	};
+	
 }
