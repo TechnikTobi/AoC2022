@@ -185,24 +185,17 @@ fn main()
 		leads_to.insert(name, tunnels);
 	}
 
+	let start = String::from("AA");
 	let distances = floyd_warshall(&leads_to);	
+	let interesting_valves = flows.iter().filter(|(_, &value)| value > 0).map(|(key, _)| key.to_string()).collect::<Vec<String>>();
 
 	// Part 1
 	// Example: 20*28 + 13*25 + 21*21 + 22*13 + 3*9 + 2*6
-
-	let interesting_valves = flows.iter().filter(|(_, &value)| value > 0).map(|(key, _)| key.to_string()).collect::<Vec<String>>();
-	// let part_1_result = recursive_visit_v2(&start, &interesting_valves, &flows, &distances, 30);
-
-	// println!("Part 1: {}", part_1_result);
-
+	let part_1_result = recursive_visit_v2(&start, &interesting_valves, &flows, &distances, 30);
+	println!("Part 1: {}", part_1_result);
 
 	// Part 2
-
-	let start = String::from("AA");
-	// let part_2_result = recursive_visit_part_2_old(&start, &start, &leads_to, &flows, &distances, &on_off, 26, 26);
 	let part_2_result = part_2(&start, &interesting_valves, &flows, &distances, 26, true);
-
 	println!("Part 2: {}", part_2_result);
-
 
 }

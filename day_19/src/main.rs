@@ -35,7 +35,6 @@ parse_blueprint
 
 	for (index, costs) in raw_blueprint.split("costs").enumerate()
 	{
-		println!("{}", costs.split(".").next().unwrap());
 		match index
 		{
 			1 => {
@@ -92,8 +91,8 @@ fn main()
 		let blueprint_id = line[10..].split(":").next().unwrap().parse::<i64>().unwrap();
 
 		let costs = parse_blueprint(&line);
-		let mut robots = vec![0i64, 0, 0, 0];
-		let mut resources = vec![costs[0][0].clone(), 0, 0, 0];
+		let robots = vec![0i64, 0, 0, 0];
+		let resources = vec![costs[0][0].clone(), 0, 0, 0];
 
 		// Get result
 		let blueprint_state = ProblemState { costs, robots, next_robot_index: 0, resources, minute: 0, max_minutes: max_minutes_part_1 }; 
@@ -118,8 +117,8 @@ fn main()
 		let blueprint_id = line[10..].split(":").next().unwrap().parse::<i64>().unwrap();
 
 		let costs = parse_blueprint(&line);
-		let mut robots = vec![0i64, 0, 0, 0];
-		let mut resources = vec![costs[0][0].clone(), 0, 0, 0];
+		let robots = vec![0i64, 0, 0, 0];
+		let resources = vec![costs[0][0].clone(), 0, 0, 0];
 
 		// Get result
 		let blueprint_state = ProblemState { costs, robots, next_robot_index: 0, resources, minute: 0, max_minutes: max_minutes_part_2 }; 
@@ -152,8 +151,6 @@ part_1
 )
 -> i64
 {
-
-	// println!("{} {:?}", state.minute, state.resources);
 
 	let mut new_robot_constructed = false;
 	while !new_robot_constructed && state.minute <= state.max_minutes
