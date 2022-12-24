@@ -64,22 +64,21 @@ EDirection
 		{
 			match self
 			{
-				EDirection::North => EDirection::West,
-				EDirection::West => EDirection::South,
-				EDirection::South => EDirection::East,
-				EDirection::East => EDirection::North
-			}
-			
-		}
-		else if rotation == 'L'
-		{
-			match self
-			{
 				EDirection::North => EDirection::East,
 				EDirection::East => EDirection::South,
 				EDirection::South => EDirection::West,
 				EDirection::West => EDirection::North,
 			}
+		}
+		else if rotation == 'L'
+		{
+			match self
+			{
+				EDirection::North => EDirection::West,
+				EDirection::West => EDirection::South,
+				EDirection::South => EDirection::East,
+				EDirection::East => EDirection::North
+			}	
 		}
 		else
 		{
@@ -137,56 +136,82 @@ fn main()
 		.unwrap();
 	let start_y = 0;
 
-	// Part 1 & 2
-	let mut current_position_part_1 = Position {x: start_x as i64, y: start_y as i64};
-	let mut current_direction_part_1 = EDirection::West;
+	// Part 1
+	// {
+	// 	let mut current_position_part_1 = Position {x: start_x as i64, y: start_y as i64};
+	// 	let mut current_direction_part_1 = EDirection::East;
 
-	let mut current_position_part_2 = current_position_part_1.clone();
-	let mut current_direction_part_2 = current_direction_part_1.clone();
+	// 	// Storing digits while parsing the instructions	
+	// 	let mut temp = String::new();
+	// 	for character in instructions.chars()
+	// 	{
+	// 		if character.is_ascii_digit()
+	// 		{
+	// 			temp.push(character);
+	// 		}
+	// 		else
+	// 		{
+	// 			let distance = temp.parse::<i64>().unwrap();
 
-	// Storing digits while parsing the instructions	
-	let mut temp = String::new();
-	for character in instructions.chars()
+	// 			current_position_part_1 = board_move_part_1(&board_map, &current_position_part_1, &current_direction_part_1, distance, max_x as i64, max_y as i64);
+	// 			current_direction_part_1 = current_direction_part_1.rotate(character);
+
+	// 			temp.clear();
+	// 		}
+	// 	}
+
+	// 	// For any remaining data in temp
+	// 	let distance = temp.parse::<i64>().unwrap();
+	// 	current_position_part_1 = board_move_part_1(&board_map, &current_position_part_1, &current_direction_part_1, distance, max_x as i64, max_y as i64);
+
+	// 	let part_1_result = 1000 * (current_position_part_1.y+1) + 4 * (current_position_part_1.x+1) + match current_direction_part_1 {
+	// 		EDirection::East => 0,
+	// 		EDirection::South => 1,
+	// 		EDirection::West => 2,
+	// 		EDirection::North => 3
+	// 	};
+
+	// 	println!("Part 1: {}", part_1_result);
+	// }
+
+
+
+
 	{
-		if character.is_ascii_digit()
+		let mut current_position_part_2 = Position {x: start_x as i64, y: start_y as i64};
+		let mut current_direction_part_2 = EDirection::East;
+
+		let mut temp = String::new();
+		for character in instructions.chars()
 		{
-			temp.push(character);
+			if character.is_ascii_digit()
+			{
+				temp.push(character);
+			}
+			else
+			{
+				let distance = temp.parse::<i64>().unwrap();
+
+				(current_position_part_2, current_direction_part_2) = board_move_part_2(&board_map, &current_position_part_2, &current_direction_part_2, distance, max_x as i64, max_y as i64, 50);
+				current_direction_part_2 = current_direction_part_2.rotate(character);
+
+				temp.clear();
+			}
 		}
-		else
-		{
-			let distance = temp.parse::<i64>().unwrap();
 
-			current_position_part_1 = board_move_part_1(&board_map, &current_position_part_1, &current_direction_part_1, distance, max_x as i64, max_y as i64);
-			current_direction_part_1 = current_direction_part_1.rotate(character);
+		// For any remaining data in temp
+		let distance = temp.parse::<i64>().unwrap();
+		(current_position_part_2, current_direction_part_2) = board_move_part_2(&board_map, &current_position_part_2, &current_direction_part_2, distance, max_x as i64, max_y as i64, 50);
 
-			(current_position_part_2, current_direction_part_2) = board_move_part_2(&board_map, &current_position_part_2, &current_direction_part_2, distance, max_x as i64, max_y as i64, 50);
-			current_direction_part_2 = current_direction_part_2.rotate(character);
-
-			temp.clear();
-		}
+		let part_2_result = 1000 * (current_position_part_2.y+1) + 4 * (current_position_part_2.x+1) + match current_direction_part_2 {
+			EDirection::East => 0,
+			EDirection::South => 1,
+			EDirection::West => 2,
+			EDirection::North => 3
+		};
+		println!("Part 2: {}", part_2_result);
 	}
 
-	// For any remaining data in temp
-	let distance = temp.parse::<i64>().unwrap();
-	current_position_part_1 = board_move_part_1(&board_map, &current_position_part_1, &current_direction_part_1, distance, max_x as i64, max_y as i64);
-	(current_position_part_2, current_direction_part_2) = board_move_part_2(&board_map, &current_position_part_2, &current_direction_part_2, distance, max_x as i64, max_y as i64, 50);
-
-	let part_1_result = 1000 * (current_position_part_1.y+1) + 4 * (current_position_part_1.x+1) + match current_direction_part_1 {
-		EDirection::West => 0,
-		EDirection::South => 1,
-		EDirection::East => 2,
-		EDirection::North => 3
-	};
-
-	let part_2_result = 1000 * (current_position_part_2.y+1) + 4 * (current_position_part_2.x+1) + match current_direction_part_2 {
-		EDirection::West => 0,
-		EDirection::South => 1,
-		EDirection::East => 2,
-		EDirection::North => 3
-	};
-
-	println!("Part 1: {}", part_1_result);
-	println!("Part 2: {}", part_2_result);
 
 }
 
@@ -203,14 +228,12 @@ board_move_part_1
 -> Position
 {
 
-	println!("STARTING MOVE {} {:?}", distance, current_direction);
-
 	let (delta_x, delta_y) = match current_direction
 	{
 		EDirection::North => (0i64, -1i64),
-		EDirection::West => (1, 0),
+		EDirection::West => (-1, 0),
 		EDirection::South => (0, 1),
-		EDirection::East => (-1, 0),
+		EDirection::East => (1, 0),
 	};
 
 	let mut new_position = current_position.clone();
@@ -233,6 +256,7 @@ board_move_part_1
 			new_position = new_position_candidate;
 		}
 	}
+
 	return new_position;
 }
 
@@ -251,6 +275,9 @@ board_move_part_2
 -> (Position, EDirection)
 {
 
+	// println!("STARTING MOVE {} {:?}", distance, current_direction);
+	println!("Starting move from: {:?}, now heading: {:?}", current_position, current_direction);
+
 	let mut direction = current_direction.clone();
 
 	let mut new_position = current_position.clone();
@@ -260,9 +287,9 @@ board_move_part_2
 		let (delta_x, delta_y) = match direction
 		{
 			EDirection::North => (0i64, -1i64),
-			EDirection::West => (1, 0),
+			EDirection::West => (-1, 0),
 			EDirection::South => (0, 1),
-			EDirection::East => (-1, 0),
+			EDirection::East => (1, 0),
 		};
 
 		// All boards have same shape
@@ -281,8 +308,12 @@ board_move_part_2
 		//  1 6 5
 		//    2
 
+		let mut direction_change = false;
+
 		let mut new_x = new_position.x + delta_x;
 		let mut new_y = new_position.y + delta_y;
+
+		let mut new_direction_candidate = direction.clone();
 
 		if new_position.y >= 3 * cube_side_length                               // Side 6
 		{
@@ -290,19 +321,22 @@ board_move_part_2
 			{
 				new_x = new_position.y - 2*cube_side_length;
 				new_y = 0;
-				direction = EDirection::South;
+				new_direction_candidate = EDirection::South;
+				direction_change = true;
 			}
 			else if new_x >= cube_side_length                     // Going to 5S
 			{
 				new_x = new_position.y - 2*cube_side_length;
 				new_y = 3*cube_side_length - 1;
-				direction = EDirection::North;
+				new_direction_candidate = EDirection::North;
+				direction_change = true;
 			}
 			else if new_y >= 4 * cube_side_length                 // Going to 2N
 			{
 				new_x = new_position.x + 2*cube_side_length;
 				new_y = 0;
-				direction = EDirection::South;
+				new_direction_candidate = EDirection::South;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -312,13 +346,15 @@ board_move_part_2
 			{
 				new_x = cube_side_length;
 				new_y = cube_side_length - (new_position.y - 2*cube_side_length) - 1;
-				direction = EDirection::West;
+				new_direction_candidate = EDirection::East;
+				direction_change = true;
 			}
 			else if new_y < 2*cube_side_length                    // Going to 3W
 			{
 				new_x = cube_side_length;
 				new_y = new_position.x + cube_side_length;
-				direction = EDirection::West;
+				new_direction_candidate = EDirection::East;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -328,13 +364,15 @@ board_move_part_2
 			{
 				new_x = 3 * cube_side_length -1;
 				new_y = cube_side_length - (new_position.y - 2*cube_side_length) - 1;
-				direction = EDirection::East;
+				new_direction_candidate = EDirection::West;
+				direction_change = true;
 			}
 			else if new_y >= 3 * cube_side_length                 // Going to 6E
 			{
 				new_x = cube_side_length -1;
 				new_y = new_position.x + 2*cube_side_length;
-				direction = EDirection::East;
+				new_direction_candidate = EDirection::West;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -344,13 +382,15 @@ board_move_part_2
 			{
 				new_x = new_position.y - cube_side_length;
 				new_y = 2*cube_side_length;
-				direction = EDirection::South;
+				new_direction_candidate = EDirection::South;
+				direction_change = true;
 			}
 			else if new_x >= 2*cube_side_length                   // Going to 2S
 			{
 				new_x = new_position.y + cube_side_length;
 				new_y = cube_side_length -1;
-				direction = EDirection::North;
+				new_direction_candidate = EDirection::North;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -359,20 +399,23 @@ board_move_part_2
 			if new_x >= 3 * cube_side_length                      // Going to 5E (upside down!)
 			{
 				new_x = 2*cube_side_length -1;
-				new_y = 2*cube_side_length + (cube_side_length - new_y -1);
-				direction = EDirection::East;
+				new_y = 2*cube_side_length + (cube_side_length - new_position.y -1);
+				new_direction_candidate = EDirection::West;
+				direction_change = true;
 			}
 			else if new_y < 0                                     // Going to 6S
 			{
-				new_x = new_x - 2*cube_side_length;
+				new_x = new_position.x - 2*cube_side_length;
 				new_y = 4*cube_side_length - 1;
-				direction = EDirection::North;
+				new_direction_candidate = EDirection::North;
+				direction_change = true;
 			}
 			else if new_y >= cube_side_length                     // Going to 3E
 			{
 				new_x = 2*cube_side_length -1;
 				new_y = new_position.x - cube_side_length;
-				direction = EDirection::East;
+				new_direction_candidate = EDirection::West;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -381,14 +424,16 @@ board_move_part_2
 			if new_x < cube_side_length                           // Going to 4W (upside down!)
 			{
 				new_x = 0; 
-				new_y = 2*cube_side_length + (cube_side_length - new_y -1);
-				direction = EDirection::West;
+				new_y = 2*cube_side_length + (cube_side_length - new_position.y -1);
+				new_direction_candidate = EDirection::East;
+				direction_change = true;
 			}
 			else if new_y < 0                                     // Going to 6W
 			{
 				new_x = 0;
 				new_y = new_position.x + 2*cube_side_length;
-				direction = EDirection::West;
+				new_direction_candidate = EDirection::East;
+				direction_change = true;
 			}
 			else {}
 		}
@@ -399,46 +444,49 @@ board_move_part_2
 			y: new_y,
 		};
 
-		if board_map[&new_position_candidate] == EField::Teleport
+		if direction_change == true || board_map[&new_position_candidate] == EField::Teleport
 		{
-			for y in 0..max_y
-			{
-				for x in 0..max_x
-				{
-					let position = Position {x: x as i64, y: y as i64};
-					if position == new_position
-					{
-						print!("█");
-					}
-					else
-					{
-						print!("{}", match board_map[&position] { EField::Teleport => "_", EField::Empty => ".", EField::Wall => "#"});
-					}
-				}
-				print!("\n");
-			}
-			print!("\n");
+			// for y in 0..max_y
+			// {
+			// 	for x in 0..max_x
+			// 	{
+			// 		let position = Position {x: x as i64, y: y as i64};
+			// 		if position == new_position
+			// 		{
+			// 			print!("█");
+			// 		}
+			// 		else
+			// 		{
+			// 			print!("{}", match board_map[&position] { EField::Teleport => "_", EField::Empty => ".", EField::Wall => "#"});
+			// 		}
+			// 	}
+			// 	print!("\n");
+			// }
+			// print!("\n");
 
-			for y in 0..max_y
-			{
-				for x in 0..max_x
-				{
-					let position = Position {x: x as i64, y: y as i64};
-					if position == new_position_candidate
-					{
-						print!("█");
-					}
-					else
-					{
-						print!("{}", match board_map[&position] { EField::Teleport => "_", EField::Empty => ".", EField::Wall => "#"});
-					}
-				}
-				print!("\n");
-			}
-			print!("\n");
+			// for y in 0..max_y
+			// {
+			// 	for x in 0..max_x
+			// 	{
+			// 		let position = Position {x: x as i64, y: y as i64};
+			// 		if position == new_position_candidate
+			// 		{
+			// 			print!("█");
+			// 		}
+			// 		else
+			// 		{
+			// 			print!("{}", match board_map[&position] { EField::Teleport => "_", EField::Empty => ".", EField::Wall => "#"});
+			// 		}
+			// 	}
+			// 	print!("\n");
+			// }
+			// print!("\n");
 
-			println!("new_position_candidate: {:?}", new_position_candidate);
-			panic!("You were not supposed to do that!");
+			// println!("new_position_candidate: {:?}", new_position_candidate);
+			if board_map[&new_position_candidate] == EField::Teleport{
+				panic!("You were not supposed to do that!");
+			}
+			
 		}
 
 		if board_map[&new_position_candidate] == EField::Wall
@@ -447,6 +495,8 @@ board_move_part_2
 		}
 
 		new_position = new_position_candidate;
+		direction = new_direction_candidate;
+		// println!("new position: {:?}", new_position);
 
 		// for y in 0..max_y
 		// {
@@ -467,7 +517,7 @@ board_move_part_2
 		// print!("\n");
 	}
 
-	println!("FINISHED MOVE: {:?}", new_position);
+	// println!("FINISHED MOVE: {:?}", new_position);
 
 	return (new_position, direction);
 }
