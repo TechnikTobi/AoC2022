@@ -39,7 +39,7 @@ EField
 	Wall
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum 
 EDirection 
 {
@@ -231,18 +231,17 @@ board_move_part_2
 
 	let mut direction = current_direction.clone();
 
-	let (delta_x, delta_y) = match direction
-	{
-		EDirection::North => (0i64, -1i64),
-		EDirection::West => (1, 0),
-		EDirection::South => (0, 1),
-		EDirection::East => (-1, 0),
-	};
-
 	let mut new_position = current_position.clone();
 	
 	for _ in 0..distance
 	{
+		let (delta_x, delta_y) = match direction
+		{
+			EDirection::North => (0i64, -1i64),
+			EDirection::West => (1, 0),
+			EDirection::South => (0, 1),
+			EDirection::East => (-1, 0),
+		};
 
 		// All boards have same shape
 		// See: https://www.reddit.com/r/adventofcode/comments/zsgbe7/2022_day_22_question_about_your_input/?utm_source=share&utm_medium=web2x&context=3
@@ -260,70 +259,147 @@ board_move_part_2
 		//  1 6 5
 		//    2
 
+		let mut new_x = new_position.x + delta_x;
+		let mut new_y = new_position.y + delta_y;
+
 		if new_position.y >= 3 * (max_y / 4)                                    // Side 6
 		{
-			let mut new_x = new_position.x + delta_x;
-			let mut new_y = new_position.y + delta_y;
-
-			if new_x < 0 // Going to 1
+			if new_x < 0                                          // Going to 1N
 			{
-				new_x = new_position.y - 3 * (max_y / 4);
+				new_x = new_y - 3 * (max_y / 4);
 				new_y = 0;
+				direction = EDirection::South;
 			}
-			else if new_x >= max_y / 4 // Going to 5
+			else if new_x >= max_y / 4                            // Going to 5S
 			{
-				new_x = new_position.y - max_y / 2;
+				new_x = new_y - max_y / 2;
 				new_y = 3 * max_y / 4 - 1;
+				direction = EDirection::North;
 			}
-			else if new_y >= max_y
+			else if new_y >= max_y                                // Going to 2N
 			{
-				
+				new_x = new_x + max_y / 2;
+				new_y = 0;
+				direction = EDirection::South;
 			}
+			else if new_y < 3 * (max_y / 4) {}                    // Going to 4S
+			else {}                                              // Staying in 6
 		}
 		else if new_position.x < (max_y / 4)                                    // Side 4
 		{
-
+			if new_x < 0                                          // Going to 1W (upside down!)
+			{
+				direction = EDirection::East;
+			}
+			else if new_x >= max_y / 4 {}                         // Going to 5W
+			else if new_y >= 3 * (max_y / 4) {}                   // Going to 6N
+			else if new_y < max_y / 2                             // Going to 3W
+			{
+				direction = EDirection::East;
+			}
+			else {}                                              // Staying in 4
 		}
 		else if new_position.y >= max_y / 2                                     // Side 5
 		{
-
+			if new_x < max_y / 4                                  // Going to 4E
+			{
+				direction = EDirection::West;
+			}
+			else if new_x >= max_y / 2                            // Going to 2E (upside down!)
+			{
+				direction = EDirection::West;
+			}
+			else if new_y >= 3 * (max_y / 4)                      // Going to 6E
+			{
+				direction = EDirection::West;
+			}
+			else if new_y < max_y / 2                             // Going to 3S
+			{
+				direction = EDirection::North;
+			}
+			else {}                                              // Staying in 5
 		}
 		else if new_position.y >= max_y / 4                                     // Side 3
 		{
+			if new_x < max_y / 4                                  // Going to 4N
+			{
+				direction = EDirection::South;
+			}
+			else if new_x >= max_y / 2                            // Going to 2S
+			{
+				direction = EDirection::North;
+			}
+			else if new_y >= max_y / 2                            // Going to 5N
+			{
+				direction = EDirection::South;
+			}
+			else if new_y < max_y / 4                             // Going to 1S
+			{
+				direction = EDirection::North;
+			}
+			else {}                                              // Staying in 3
 
 		}
 		else if new_position.x >= max_y / 2                                     // Side 2
 		{
-
+			if new_x < max_y / 2                                  // Going to 1E
+			{
+				direction = EDirection::West;
+			}
+			else if new_x >= 3 * (max_y / 4)                      // Going to 5E (upside down!)
+			{
+				direction = EDirection::West;
+			}
+			else if new_y < 0                                     // Going to 6S
+			{
+				direction = EDirection::North;
+			}
+			else if new_y >= max_y / 4                            // Going to 3E
+			{
+				direction = EDirection::West;
+			}
+			else {}                                              // Staying in 2
 		}
 		else                                                                    // Side 1
 		{
-
+			if new_x < max_y / 4                                  // Going to 4W (upside down!)
+			{
+				direction = EDirection::East;
+			}
+			else if new_x >= max_y / 2                            // Going to 2W
+			{
+				direction = EDirection::East;
+			}
+			else if new_y < 0                                     // Going to 6W
+			{
+				direction = EDirection::East;
+			}
+			else if new_y >= max_y / 4                            // Going to 3N
+			{
+				direction = EDirection::South;
+			}
+			else {}                                              // Staying in 2
 		}
 
 
 
 		let mut new_position_candidate =  Position
 		{
-			x: (new_position.x + delta_x + max_x) % max_x,
-			y: (new_position.y + delta_y + max_y) % max_y
+			x: new_x,
+			y: new_y,
 		};
 
-
-		
-		while board_map[&new_position_candidate] == EField::Teleport || new_position_candidate == new_position
+		if board_map[&new_position_candidate] == EField::Teleport
 		{
-			new_position_candidate =  Position
-			{
-				x: (new_position_candidate.x + delta_x + max_x) % max_x,
-				y: (new_position_candidate.y + delta_y + max_y) % max_y
-			};
+			panic!("You were not supposed to do that!");
 		}
 
-		if board_map[&new_position_candidate] == EField::Empty
+		if board_map[&new_position_candidate] == EField::Wall
 		{
-			new_position = new_position_candidate;
+			break;
 		}
+
+		new_position = new_position_candidate;
 
 		// for y in 0..max_y
 		// {
@@ -346,5 +422,5 @@ board_move_part_2
 
 	// println!("FINISHED MOVE: {:?}", new_position);
 
-	return new_position;
+	return (new_position, direction);
 }
